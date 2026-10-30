@@ -1,0 +1,28 @@
+# Desarrollo (tu PC). Producción: docker-compose.prod.yml
+services:
+  db:
+    image: postgres:17
+    ports:
+      - "5432:5432"                # para conectar desde tu PC (pgAdmin, DBeaver, etc.)
+    env_file: .env
+    volumes:
+      - postgres17_data:/var/lib/postgresql/data   # los datos sobreviven si apagas
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app                     # cambias código y se refleja sin reconstruir
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy # Django espera a que Postgres esté listo
+
+volumes:
+  postgres17_data:

@@ -1,0 +1,37 @@
+# Producción (VPS). Uso: docker compose -f docker-compose.prod.yml up -d --build
+name: hadmind-web
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+    # sin "ports": la base de datos no es accesible desde fuera de Docker
+
+  web:
+    build: .
+    restart: unless-stopped
+    # aplica migraciones pendientes y arranca gunicorn
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --access-logfile -"
+    ports:
+      - "127.0.0.1:8003:8000"      # solo Nginx (en el mismo VPS) puede llegar aquí
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
