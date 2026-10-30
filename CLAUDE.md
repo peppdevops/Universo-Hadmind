@@ -38,12 +38,20 @@ docker compose exec web python manage.py test apps.landing.tests.HomeTests.test_
 
 Rebuild after changing `requirements.txt`. Keep it UTF-8 (`pip freeze | Out-File -Encoding utf8 requirements.txt` in PowerShell; `>` writes UTF-16). No linter/formatter configured.
 
-Production (`docker-compose.prod.yml`, project name `hadmind-web`): gunicorn bound to `127.0.0.1:8003`, migrations run on container start, Postgres not published.
+Production/staging (`docker-compose.prod.yml`): gunicorn bound to `127.0.0.1:${WEB_PORT}`, migrations run on container start, Postgres not published. `COMPOSE_PROJECT_NAME` and `WEB_PORT` in each deployment's `.env` keep the two VPS copies apart (production `hadmind-web`/8003, staging `hadmind-staging`/8004).
 
 ```sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+## Branches
+
+- `develop` — day-to-day work; commit here.
+- `staging` — what is deployed to `staging.hadmind.com.co` for review; updated by merging `develop`.
+- `main` — production (`hadmind.com.co`); updated only by merging `staging`.
+
+Changes flow `develop → staging → main`; never commit directly to `staging` or `main`.
+
 ## Deployment target
 
-Hostinger VPS shared with other projects (each its own compose + own Postgres container, web on `127.0.0.1:800X`, host Nginx + Certbot in front). Hadmind lives in `/opt/hadmind-web` and uses port 8003. The current static site is in `/var/www/hadmind` (Nginx site `hadmind`) — do not deploy into that directory. Rollout: staging at `staging.hadmind.com.co` first; at launch, switch the `hadmind` Nginx site from `root /var/www/hadmind` to `proxy_pass http://127.0.0.1:8003`, keeping a backup of the old site for rollback.
+Hostinger VPS shared with other projects (each its own compose + own Postgres container, web on `127.0.0.1:800X`, host Nginx + Certbot in front). Production lives in `/opt/hadmind-web` (branch `main`, port 8003); staging in `/opt/hadmind-staging` (branch `staging`, port 8004). The current static site is in `/var/www/hadmind` (Nginx site `hadmind`) — do not deploy into that directory. Rollout: staging at `staging.hadmind.com.co` first; at launch, switch the `hadmind` Nginx site from `root /var/www/hadmind` to `proxy_pass http://127.0.0.1:8003`, keeping a backup of the old site for rollback.
