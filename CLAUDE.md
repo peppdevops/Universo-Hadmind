@@ -38,20 +38,26 @@ docker compose exec web python manage.py test apps.landing.tests.HomeTests.test_
 
 Rebuild after changing `requirements.txt`. Keep it UTF-8 (`pip freeze | Out-File -Encoding utf8 requirements.txt` in PowerShell; `>` writes UTF-16). No linter/formatter configured.
 
-Production/staging (`docker-compose.prod.yml`): gunicorn bound to `127.0.0.1:${WEB_PORT}`, migrations run on container start, Postgres not published. `COMPOSE_PROJECT_NAME` and `WEB_PORT` in each deployment's `.env` keep the two VPS copies apart (production `hadmind-web`/8003, staging `hadmind-staging`/8004).
+Production (`docker-compose.prod.yml`): gunicorn bound to `127.0.0.1:${WEB_PORT:-8003}`, migrations run on container start, Postgres not published. `COMPOSE_PROJECT_NAME`/`WEB_PORT` come from `.env`.
 
 ```sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+Local production-mode check before merging to `main` (DEBUG off, gunicorn, hashed static; http://localhost:8003, separate project and DB):
+
+```sh
+docker compose -p hadmind-prodtest -f docker-compose.prod.yml -f docker-compose.prodtest.yml up --build
+docker compose -p hadmind-prodtest -f docker-compose.prod.yml -f docker-compose.prodtest.yml down -v
+```
+
 ## Branches
 
-- `develop` — day-to-day work; commit here.
-- `staging` — what is deployed to `staging.hadmind.com.co` for review; updated by merging `develop`.
-- `main` — production (`hadmind.com.co`); updated only by merging `staging`.
+- `develop` — day-to-day work and local testing; commit here.
+- `main` — production (`hadmind.com.co`); updated only by merging `develop` after tests and the local production-mode check pass.
 
-Changes flow `develop → staging → main`; never commit directly to `staging` or `main`.
+There is deliberately no public staging environment; never commit directly to `main`.
 
 ## Deployment target
 
-Hostinger VPS shared with other projects (each its own compose + own Postgres container, web on `127.0.0.1:800X`, host Nginx + Certbot in front). Production lives in `/opt/hadmind-web` (branch `main`, port 8003); staging in `/opt/hadmind-staging` (branch `staging`, port 8004). The current static site is in `/var/www/hadmind` (Nginx site `hadmind`) — do not deploy into that directory. Rollout: staging at `staging.hadmind.com.co` first; at launch, switch the `hadmind` Nginx site from `root /var/www/hadmind` to `proxy_pass http://127.0.0.1:8003`, keeping a backup of the old site for rollback.
+Hostinger VPS shared with other projects (each its own compose + own Postgres container, web on `127.0.0.1:800X`, host Nginx + Certbot in front). Production lives in `/opt/hadmind-web` (branch `main`, port 8003). The current static site is in `/var/www/hadmind` (Nginx site `hadmind`) — do not deploy into that directory. At launch, switch the `hadmind` Nginx site from `root /var/www/hadmind` to `proxy_pass http://127.0.0.1:8003`, keeping a backup of the old site for rollback.

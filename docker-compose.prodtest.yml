@@ -1,0 +1,7 @@
+# Prueba local en modo producción (gunicorn, DEBUG desactivado), en http://localhost:8003
+# Uso:   docker compose -p hadmind-prodtest -f docker-compose.prod.yml -f docker-compose.prodtest.yml up --build
+# Borrar: docker compose -p hadmind-prodtest -f docker-compose.prod.yml -f docker-compose.prodtest.yml down -v
+services:
+  web:
+    environment:
+      DJANGO_DEBUG: "0"

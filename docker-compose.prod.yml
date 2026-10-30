@@ -1,5 +1,5 @@
-# Producción y staging (VPS). Uso: docker compose -f docker-compose.prod.yml up -d --build
-# COMPOSE_PROJECT_NAME y WEB_PORT (en .env) separan staging de producción en el mismo VPS
+# Producción (VPS). Uso: docker compose -f docker-compose.prod.yml up -d --build
+# Para probarlo en tu PC antes de publicar: ver docker-compose.prodtest.yml
 services:
   db:
     image: postgres:17
