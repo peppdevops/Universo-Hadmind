@@ -1,0 +1,76 @@
+{% load static %}
+<footer class="pie">
+    <div class="pie__contenido">
+        <div class="pie__columnas">
+            <div class="pie__marca">
+                <a href="{% url 'landing:home' %}" aria-label="HADMIND inicio">
+                    <img src="{% static 'landing/img/logo-blanco.png' %}" alt="HADMIND" width="649" height="338">
+                </a>
+                <p>Software, automatización e inteligencia artificial para empresas que quieren trabajar mejor.</p>
+                <div class="pie__redes">
+                    {% if sitio.contacto.whatsapp_url %}
+                    <a class="pie__red" href="{{ sitio.contacto.whatsapp_url }}" target="_blank" rel="noopener" aria-label="WhatsApp">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z"/><path d="M9 8.6c.2-.5.5-.6.8-.6h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .5-.1.6l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.2.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3-.2.6-.6.8-.6.3-1.6.4-3-.3a8.6 8.6 0 0 1-3.6-3.6c-.6-1.4-.5-2.4-.3-3z"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if sitio.contacto.instagram_url %}
+                    <a class="pie__red" href="{{ sitio.contacto.instagram_url }}" target="_blank" rel="noopener" aria-label="Instagram">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="0.6" fill="currentColor"/></svg>
+                    </a>
+                    {% endif %}
+                    {% if sitio.contacto.linkedin_url %}
+                    <a class="pie__red" href="{{ sitio.contacto.linkedin_url }}" target="_blank" rel="noopener" aria-label="LinkedIn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5v5.5"/><circle cx="8" cy="7.8" r="0.5" fill="currentColor"/><path d="M11.5 16v-5.5"/><path d="M11.5 13c0-1.5 1-2.5 2.3-2.5S16 11.3 16 13v3"/></svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Los 11 servicios en dos columnas (6 + 5), como en el boceto #}
+            <nav class="pie__grupo" aria-label="Servicios">
+                <div class="pie__titulo">SERVICIOS</div>
+                <ul class="pie__lista">
+                    {% for servicio in sitio.servicios|slice:":6" %}
+                    <li><a href="{% url 'landing:home' %}#servicios">{{ servicio.titulo }}</a></li>
+                    {% endfor %}
+                </ul>
+            </nav>
+            <div class="pie__grupo pie__grupo--continua">
+                <div class="pie__titulo" aria-hidden="true">&nbsp;</div>
+                <ul class="pie__lista">
+                    {% for servicio in sitio.servicios|slice:"6:" %}
+                    <li><a href="{% url 'landing:home' %}#servicios">{{ servicio.titulo }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <nav class="pie__grupo" aria-label="Empresa">
+                <div class="pie__titulo">EMPRESA</div>
+                <ul class="pie__lista">
+                    {% for item in sitio.menu %}
+                    <li><a href="{{ item.href }}">{{ item.etiqueta }}</a></li>
+                    {% endfor %}
+                </ul>
+            </nav>
+
+            <div class="pie__grupo">
+                <div class="pie__titulo">CONTACTO</div>
+                <ul class="pie__lista">
+                    <li><a href="mailto:{{ sitio.contacto.correo }}">{{ sitio.contacto.correo }}</a></li>
+                    <li><a href="tel:{{ sitio.contacto.telefono_href }}">{{ sitio.contacto.telefono }}</a></li>
+                    {% if sitio.contacto.whatsapp_url %}
+                    <li><a href="{{ sitio.contacto.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="pie__legal">
+            <span>© {% now "Y" %} HADMIND. Todos los derechos reservados.</span>
+            <div class="pie__legal-enlaces">
+                {# Privacidad y Términos: añadir cuando existan sus páginas #}
+                <a class="pie__arriba" href="#">Volver arriba <span aria-hidden="true">↑</span></a>
+            </div>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,15 @@
+{% load static %}
+<header class="cabecera" data-cabecera>
+    <a class="cabecera__logo" href="{% url 'landing:home' %}" aria-label="HADMIND inicio" data-cabecera-pieza>
+        <img src="{% static 'landing/img/logo-blanco.png' %}" alt="HADMIND" width="649" height="338">
+    </a>
+    <button class="boton-menu" type="button" aria-controls="menu" aria-expanded="false" data-abrir-menu data-cabecera-pieza>
+        <span>MENÚ</span>
+        <span class="boton-menu__icono" aria-hidden="true"><span></span><span></span></span>
+    </button>
+</header>
+
+{# Aparece en el centro al hacer scroll y sustituye al header #}
+<button class="boton-circulo" type="button" aria-label="Abrir menú" aria-controls="menu" aria-expanded="false" tabindex="-1" data-abrir-menu data-boton-circulo>
+    <img src="{% static 'landing/img/logo-blanco.png' %}" alt="" width="649" height="338">
+</button>

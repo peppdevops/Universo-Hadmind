@@ -1,0 +1,20 @@
+{% load static %}
+<div class="menu" id="menu" role="dialog" aria-modal="true" aria-label="Menú principal" inert data-menu>
+    <div class="menu__barra">
+        <a class="cabecera__logo" href="{% url 'landing:home' %}" aria-label="HADMIND inicio">
+            <img src="{% static 'landing/img/logo-blanco.png' %}" alt="HADMIND" width="649" height="338">
+        </a>
+        <button class="boton-menu" type="button" data-cerrar-menu>CERRAR</button>
+    </div>
+    <nav class="menu__nav" aria-label="Secciones">
+        {% for item in sitio.menu %}
+        <div class="menu__fila">
+            <a class="menu__enlace" href="{{ item.href }}" style="--i: {{ forloop.counter }}" data-menu-enlace>
+                <span class="menu__num">{{ item.num }}</span>
+                <span>{{ item.etiqueta }}</span>
+            </a>
+        </div>
+        {% endfor %}
+    </nav>
+    <div class="menu__linea" aria-hidden="true"></div>
+</div>
