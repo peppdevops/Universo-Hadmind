@@ -113,13 +113,10 @@ def datos_embudo():
     datos = embudo()
     for fila in datos['filas']:
         fila['color'] = formato.color_etapa(fila['etapa'])
-        if fila['anterior'] is None:
-            fila['nota'] = f'{fila["de_total"]} % del total'
-        elif fila['de_anterior'] is None:
-            fila['nota'] = f'{fila["anterior"]} está vacía'
-        else:
-            # Es una foto de hoy, no una conversión: por eso no dice "pasa de".
-            fila['nota'] = f'{fila["de_anterior"]} % frente a {fila["anterior"]}'
+        # Todas las etapas se comparan con el total. Compararlas con la etapa
+        # anterior daba cifras sin sentido ("150 % frente a Contactado"):
+        # el embudo es una foto de hoy, no una tasa de conversión.
+        fila['nota'] = f'{fila["de_total"]} % del total'
     datos['total_texto'] = f'{datos["total_empresas"]} empresas en total'
     return datos
 

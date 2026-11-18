@@ -427,3 +427,30 @@
 }
 
 .hd-tabla .hd-derecha { text-align: right; }
+
+/* -------------------------------------------------------------------------
+ * Arreglo de unfold 0.110.1: a 1280 px EXACTOS el menú lateral no abría.
+ * Su JavaScript trata 1280 px como pantalla pequeña (menú flotante) y su CSS
+ * (clase xl:relative) como grande (menú que empuja el contenido). Al abrirse,
+ * el menú empujaba la página, ese cambio de tamaño hacía que el JavaScript lo
+ * volviera a cerrar. 1280 px es muy común (pantalla Full HD con escala 150 %).
+ * Aquí, solo en ese ancho exacto, el menú flota como en pantallas pequeñas.
+ * ------------------------------------------------------------------------- */
+@media (min-width: 1280px) and (max-width: 1280.98px) {
+    .xl\:relative:has(> div > #nav-sidebar) {
+        position: fixed;
+    }
+
+}
+
+/* La X para cerrar el menú, que unfold oculta desde 1280 px con
+ * "display: none !important" dentro de una capa (@layer) de su CSS. Una regla
+ * normal no le gana; una !important en una capa declarada ANTES sí, y este
+ * archivo se carga antes que el de unfold. */
+@layer hd-arreglos {
+    @media (min-width: 1280px) and (max-width: 1280.98px) {
+        #nav-sidebar .xl\:hidden\! {
+            display: block !important;
+        }
+    }
+}
