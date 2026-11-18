@@ -1,0 +1,11 @@
+{% load unfold %}
+{# Bloque: 5 tarjetas de finanzas del mes. EJEMPLO hasta la fase 3 (core/dashboard_ejemplo.py). #}
+<div class="hd-tarjetas">
+    {% for t in finanzas.tarjetas %}
+        {% component "unfold/components/card.html" %}
+            <p class="hd-suave hd-tarjeta__titulo">{{ t.titulo }}</p>
+            <p class="hd-dinero hd-dinero--{{ t.tono }}">{{ t.valor }}</p>
+            <p class="hd-nota">{{ t.detalle }}</p>
+        {% endcomponent %}
+    {% endfor %}
+</div>

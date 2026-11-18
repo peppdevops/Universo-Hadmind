@@ -1,0 +1,13 @@
+{% load unfold %}
+{% comment %}
+Bloque: ingresos vs egresos de los últimos 6 meses. Usa el gráfico de barras
+que trae unfold (Chart.js): solo se le pasan los datos en JSON.
+EJEMPLO hasta la fase 3.
+{% endcomment %}
+{% component "unfold/components/card.html" with title="Ingresos vs egresos · últimos 6 meses" %}
+    {% component "unfold/components/chart/bar.html" with data=finanzas.grafico height=280 %}{% endcomponent %}
+    <p class="hd-leyenda">
+        <span class="hd-punto hd-punto--ingresos"></span> Ingresos
+        <span class="hd-punto hd-punto--egresos"></span> Egresos
+    </p>
+{% endcomponent %}

@@ -1,0 +1,37 @@
+{% load unfold %}
+{% comment %}
+Bloque: cobros vencidos. EJEMPLO hasta la fase 3. "Marcar pagado" se ve pero
+está desactivado: en la fase 3 abrirá una página corta con fecha, monto y medio.
+{% endcomment %}
+{% component "unfold/components/card.html" with title="Cobros vencidos" description=finanzas.vencidos.resumen %}
+    <div class="hd-tabla-contenedor">
+        <table class="hd-tabla">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Concepto</th>
+                    <th class="hd-derecha">Valor</th>
+                    <th>Venció</th>
+                    <th>Atraso</th>
+                    <th><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in finanzas.vencidos.filas %}
+                    <tr>
+                        <td><strong>{{ c.cliente }}</strong></td>
+                        <td class="hd-suave">{{ c.concepto }}</td>
+                        <td class="hd-derecha"><strong>{{ c.valor }}</strong></td>
+                        <td class="hd-suave">{{ c.vencio }}</td>
+                        <td>{% include "unfold/helpers/label.html" with type="danger" text=c.dias|stringformat:"s"|add:" días" %}</td>
+                        <td class="hd-derecha">
+                            {% include "unfold/components/button.html" with size="sm" children="Marcar pagado" attrs=finanzas.boton_desactivado %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="hd-vacio">No hay cobros vencidos.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcomponent %}

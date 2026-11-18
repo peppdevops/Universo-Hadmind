@@ -1,0 +1,48 @@
+{% load unfold %}
+{% comment %}
+Bloque: "Hoy". Llamadas de hoy y vencidas. El vendedor ve solo las suyas
+(lo decide apps/crm/services.py -> agenda_hoy). Las pestañas son enlaces
+(?agenda=vencidas): funcionan sin JavaScript.
+{% endcomment %}
+{% component "unfold/components/card.html" with title="Hoy" description=agenda.descripcion %}
+    <nav class="hd-pestanas" aria-label="Filtrar llamadas">
+        {% for p in agenda.pestanas %}
+            <a href="?agenda={{ p.clave }}" class="hd-pestana{% if p.activa %} hd-pestana--activa{% endif %}"{% if p.activa %} aria-current="page"{% endif %}>
+                {{ p.texto }} ({{ p.cantidad }})
+            </a>
+        {% endfor %}
+    </nav>
+
+    <ul class="hd-agenda">
+        {% for f in agenda.filas %}
+            <li class="hd-agenda__fila{% if f.vencida %} hd-agenda__fila--vencida{% endif %}">
+                <div class="hd-agenda__cuando">
+                    {% if f.vencida %}
+                        {% include "unfold/helpers/label.html" with type="danger" text="Vencida" %}
+                        <span class="hd-alerta-texto">{{ f.cuando }}</span>
+                    {% else %}
+                        <strong>{{ f.cuando }}</strong>
+                    {% endif %}
+                </div>
+                <div class="hd-agenda__empresa">
+                    <strong>{{ f.empresa }}</strong>
+                    <span class="hd-suave">{{ f.detalle }}</span>
+                </div>
+                <div class="hd-agenda__meta">
+                    {% include "unfold/helpers/label.html" with type=f.color_etapa text=f.etapa %}
+                    {% if es_superusuario %}<span class="hd-suave">{{ f.vendedor }}</span>{% endif %}
+                </div>
+                <div class="hd-agenda__botones">
+                    {% if f.whatsapp %}
+                        <a class="hd-boton-icono" href="{{ f.whatsapp }}" target="_blank" rel="noopener" title="Abrir WhatsApp">
+                            <span class="material-symbols-outlined">chat</span>
+                        </a>
+                    {% endif %}
+                    {% include "unfold/components/button.html" with href=f.registrar variant="default" size="sm" icon="edit" children="Registrar llamada" %}
+                </div>
+            </li>
+        {% empty %}
+            <li class="hd-vacio">No hay llamadas pendientes.</li>
+        {% endfor %}
+    </ul>
+{% endcomponent %}

@@ -1,0 +1,6 @@
+{% comment %}
+Frase de arriba de la lista ("253 empresas · 7 llamadas para hoy").
+unfold la inserta antes de la tabla (list_before_template en admin.py).
+Los números los calcula changelist_view; aquí solo se muestran.
+{% endcomment %}
+<p class="hd-resumen-lista">{{ resumen_total }} empresa{{ resumen_total|pluralize }} · {{ resumen_hoy }} llamada{{ resumen_hoy|pluralize }} para hoy</p>

@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 import os
 
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,6 +40,9 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    # unfold debe ir ANTES de django.contrib.admin: Django usa la primera
+    # plantilla que encuentra, y así gana la de unfold sobre la del admin.
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +53,7 @@ INSTALLED_APPS = [
 
     'core',
     'apps.landing',
+    'apps.crm',
 ]
 
 MIDDLEWARE = [
@@ -145,6 +152,98 @@ STORAGES = {
             if DEBUG
             else "whitenoise.storage.CompressedManifestStaticFilesStorage"
         ),
+    },
+}
+
+
+# Admin con django-unfold
+# https://unfoldadmin.com/docs/configuration/settings/
+# Aquí no hay diseño propio: solo colores de marca, tipografía y el menú.
+
+UNFOLD = {
+    'SITE_TITLE': 'HADMIND',            # título de la pestaña del navegador
+    'SITE_HEADER': 'HADMIND',           # nombre arriba del menú lateral
+    'SITE_SUBHEADER': 'CRM interno',
+    'SITE_URL': '/',                    # el nombre lleva a la landing
+    'SHOW_VIEW_ON_SITE': False,         # los contactos no tienen página pública
+    # Datos del Inicio (dashboard). La página es templates/admin/index.html.
+    'DASHBOARD_CALLBACK': 'core.dashboard.dashboard_callback',
+    'STYLES': [
+        # lambda: static() necesita que Django esté cargado; así se llama al usarse.
+        lambda request: static('hadmind_admin/admin.css'),
+    ],
+    'COLORS': {
+        # Escala del azul HADMIND (#3E83D6 = 600, el tono de botones y enlaces).
+        # unfold necesita los 11 tonos: claros para fondos, oscuros para texto.
+        'primary': {
+            '50': '#F2F7FF',
+            '100': '#E2EEFE',
+            '200': '#C8DFFB',
+            '300': '#A1C7F7',
+            '400': '#6AA4ED',
+            '500': '#4B8EDF',
+            '600': '#3E83D6',
+            '700': '#2463AD',
+            '800': '#1B508D',
+            '900': '#174071',
+            '950': '#092649',
+        },
+    },
+    # Buscador global (arriba): busca en los search_fields de cada admin.
+    'COMMAND': {
+        'search_models': True,
+    },
+    'SIDEBAR': {
+        'show_search': False,
+        # Enlace "Todas las aplicaciones": lista todas las tablas del admin,
+        # incluidas las que se creen en el futuro. Solo para el superusuario:
+        # unfold llama a esta función con cada petición y lo muestra si da True.
+        'show_all_applications': 'core.admin_permisos.es_superusuario',
+        # "permission" decide si el enlace se muestra; un grupo sin enlaces
+        # visibles desaparece solo. Iconos: https://fonts.google.com/icons
+        'navigation': [
+            {
+                'items': [
+                    {'title': 'Inicio', 'icon': 'home', 'link': reverse_lazy('admin:index')},
+                ],
+            },
+            {
+                'title': 'Ventas',
+                'items': [
+                    {
+                        'title': 'Empresas por llamar',
+                        'icon': 'call',
+                        'link': reverse_lazy('admin:crm_empresaporllamar_changelist'),
+                        'permission': 'core.admin_permisos.ver_empresas_por_llamar',
+                    },
+                    {
+                        'title': 'Clientes activos',
+                        'icon': 'group',
+                        'link': reverse_lazy('admin:crm_clienteactivo_changelist'),
+                        'permission': 'core.admin_permisos.ver_clientes_activos',
+                    },
+                    {
+                        'title': 'Etapas',
+                        'icon': 'filter_alt',
+                        'link': reverse_lazy('admin:crm_etapa_changelist'),
+                        'permission': 'core.admin_permisos.ver_etapas',
+                    },
+                ],
+            },
+            # Finanzas se añade en la fase 3, cuando existan sus modelos
+            # (un enlace a una página que no existe rompería el admin).
+            {
+                'title': 'Equipo',
+                'items': [
+                    {
+                        'title': 'Usuarios',
+                        'icon': 'badge',
+                        'link': reverse_lazy('admin:auth_user_changelist'),
+                        'permission': 'core.admin_permisos.es_superusuario',
+                    },
+                ],
+            },
+        ],
     },
 }
 

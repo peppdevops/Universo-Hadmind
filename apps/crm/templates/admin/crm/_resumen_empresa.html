@@ -1,0 +1,36 @@
+{% comment %}
+Resumen de la empresa arriba del formulario (change_form_before_template).
+Los datos ya vienen preparados en "resumen" desde change_view (admin.py).
+Al crear una empresa nueva no hay resumen y no se muestra nada.
+{% endcomment %}
+{% if resumen %}
+<div class="hd-resumen">
+    <div class="hd-resumen__datos">
+        <p class="hd-resumen__nombre">{{ resumen.empresa }}</p>
+        {% if resumen.detalle %}<p class="hd-suave">{{ resumen.detalle }}</p>{% endif %}
+        <div class="hd-resumen__chips">
+            {% include "unfold/helpers/label.html" with type=resumen.color_etapa text=resumen.etapa|default:"Sin etapa" %}
+            {% if resumen.vendedor %}<span class="hd-suave">{{ resumen.vendedor }}</span>{% endif %}
+            {% if resumen.proxima_tipo %}
+                <span class="hd-suave">Próxima:</span>
+                {% if resumen.proxima_tipo == "vencida" %}
+                    {% include "unfold/helpers/label.html" with type="danger" text=resumen.proxima_texto %}
+                {% else %}
+                    <strong>{{ resumen.proxima_texto }}</strong>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class="hd-resumen__botones">
+        {% if resumen.whatsapp %}
+            {% include "unfold/components/button.html" with href=resumen.whatsapp variant="default" icon="chat" children="WhatsApp" attrs=resumen.nueva_pestana %}
+        {% endif %}
+        {% if resumen.tel %}
+            {# tel: abre el marcador del celular para llamar directamente #}
+            {% with "tel:"|add:resumen.tel as enlace_tel %}
+                {% include "unfold/components/button.html" with href=enlace_tel variant="default" icon="call" children=resumen.telefono %}
+            {% endwith %}
+        {% endif %}
+    </div>
+</div>
+{% endif %}

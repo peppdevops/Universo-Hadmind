@@ -1,0 +1,46 @@
+{% extends 'admin/base.html' %}
+{% comment %}
+Inicio del admin (dashboard). Reemplaza la lista de tablas de Django/unfold
+(las tablas siguen en el menú: "Todas las aplicaciones").
+
+Esta página SOLO decide qué bloques se muestran y en qué orden. Cada bloque es
+una plantilla independiente en admin/dashboard/ y sus datos llegan listos desde
+core/dashboard.py. Para cambiar el Inicio: añadir, quitar o mover un include.
+{% endcomment %}
+
+{% block title %}Inicio | {{ site_title|default:"HADMIND" }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="hd-dashboard">
+    {% include "admin/dashboard/_saludo.html" %}
+
+    {% if es_superusuario %}
+        <h2 class="hd-seccion">Ventas</h2>
+        {% include "admin/dashboard/_embudo.html" %}
+    {% endif %}
+
+    <div class="hd-columnas">
+        {% include "admin/dashboard/_hoy.html" %}
+        {% include "admin/dashboard/_llamadas_vendedor.html" %}
+    </div>
+
+    {% if es_superusuario %}
+        <div class="hd-seccion hd-seccion--con-nota">
+            <h2>Finanzas del mes · {{ finanzas.mes }}</h2>
+            {% if finanzas.es_ejemplo %}
+                {% include "unfold/helpers/label.html" with type="warning" text="Datos de ejemplo" %}
+            {% endif %}
+        </div>
+        {% include "admin/dashboard/_finanzas_tarjetas.html" %}
+        <div class="hd-columnas">
+            {% include "admin/dashboard/_grafico.html" %}
+            {% include "admin/dashboard/_esta_semana.html" %}
+        </div>
+        {% include "admin/dashboard/_cobros_vencidos.html" %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% comment %}
+Página de importar CSV con las piezas de unfold: su plantilla de campo
+(unfold/helpers/field.html) y su botón (unfold/components/button.html).
+El título lo pone unfold arriba a partir de la variable "title" de la vista.
+{% endcomment %}
+
+{% block content %}
+<div class="flex flex-col gap-6 max-w-2xl">
+    <div class="text-sm leading-relaxed">
+        <p class="mb-2">Cada fila necesita la <strong>empresa</strong> y al menos un <strong>teléfono</strong> o un <strong>correo</strong>.
+           Las filas cuyo teléfono o correo ya existan se saltan. Al terminar verás cuántas se importaron y qué filas fallaron.</p>
+        <p>Consejo: en Excel da formato de <strong>Texto</strong> a la columna del teléfono para que no lo convierta en <code>3,00E+09</code>.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            {% include "unfold/helpers/form_errors.html" with errors=form.non_field_errors %}
+        {% endif %}
+
+        {% for campo in form %}
+            {% include "unfold/helpers/field.html" with field=campo %}
+        {% endfor %}
+
+        <div class="flex gap-3">
+            {% include "unfold/components/button.html" with submit=1 icon="upload" children="Importar" %}
+            {% url 'admin:crm_empresaporllamar_changelist' as volver %}
+            {% include "unfold/components/button.html" with href=volver variant="default" children="Cancelar" %}
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load unfold %}
+{# Bloque: cobros por recibir y egresos por pagar esta semana. EJEMPLO hasta la fase 3. #}
+{% component "unfold/components/card.html" with title="Esta semana" %}
+    {% with recibir=finanzas.semana.por_recibir pagar=finanzas.semana.por_pagar %}
+        <div class="hd-semana__grupo">
+            <p class="hd-semana__titulo hd-exito"><span>Por recibir</span><span>{{ recibir.total }}</span></p>
+            <ul class="hd-lista">
+                {% for f in recibir.filas %}
+                    <li>
+                        <div><strong>{{ f.nombre }}</strong><span class="hd-nota">{{ f.detalle }}</span></div>
+                        <strong>{{ f.valor }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="hd-semana__grupo">
+            <p class="hd-semana__titulo hd-pendiente"><span>Por pagar</span><span>{{ pagar.total }}</span></p>
+            <ul class="hd-lista">
+                {% for f in pagar.filas %}
+                    <li>
+                        <div><strong>{{ f.nombre }}</strong><span class="hd-nota">{{ f.detalle }}</span></div>
+                        <strong>{{ f.valor }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endwith %}
+{% endcomponent %}
