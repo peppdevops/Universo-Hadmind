@@ -1,0 +1,40 @@
+{% load static %}
+<section class="servicios seccion-clara" id="servicios">
+    <div class="servicios__cabeza">
+        <div class="etiqueta">NUESTROS SERVICIOS</div>
+        <h2 class="titulo-seccion">Lo que construimos para tu empresa</h2>
+    </div>
+
+    {# Carrusel infinito: la lista va dos veces y servicios.js la desplaza; la copia es solo visual #}
+    <div class="servicios__ventana" data-carrusel>
+        <div class="servicios__pista" data-carrusel-pista>
+            {% for copia in "12" %}
+            <div class="servicios__grupo"{% if not forloop.first %} aria-hidden="true" inert{% endif %}>
+                {% for servicio in sitio.servicios %}
+                <article class="servicio" tabindex="0" data-servicio>
+                    {% if servicio.imagen %}
+                    <img class="servicio__imagen" src="{% static servicio.imagen %}" alt="" loading="lazy">
+                    {% else %}
+                    <span class="servicio__num" aria-hidden="true">{{ forloop.counter|stringformat:"02d" }}</span>
+                    {% endif %}
+                    <div class="servicio__sombra" aria-hidden="true"></div>
+                    <h3 class="servicio__titulo">{{ servicio.titulo }}</h3>
+                    <div class="servicio__detalle">
+                        <div class="servicio__detalle-etiqueta">QUÉ ES</div>
+                        <p>{{ servicio.resumen }}</p>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <figure class="testimonio">
+        <div class="testimonio__estrellas" role="img" aria-label="5 de 5 estrellas">
+            <span aria-hidden="true">★★★★★</span>
+        </div>
+        <blockquote class="testimonio__cita">“{{ testimonio.cita }}”</blockquote>
+        <figcaption class="testimonio__autor">{{ testimonio.autor }}</figcaption>
+    </figure>
+</section>

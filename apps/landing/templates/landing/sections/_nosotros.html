@@ -1,0 +1,33 @@
+{% load static %}
+{# Textos en apps/landing/contenido.py (NOSOTROS y CLIENTES) #}
+<section class="nosotros seccion-clara" id="nosotros">
+    <div class="nosotros__intro">
+        <h2 class="nosotros__titulo">{{ nosotros.titulo }}</h2>
+        {% for parrafo in nosotros.parrafos %}
+        <p>{{ parrafo }}</p>
+        {% endfor %}
+    </div>
+
+    {% if clientes %}
+    <div class="clientes" data-clientes>
+        <h3 class="clientes__titulo">{{ nosotros.titulo_clientes }}</h3>
+        <div class="clientes__carrusel">
+            <button class="clientes__flecha" type="button" aria-label="Clientes anteriores" data-clientes-anterior>‹</button>
+            <ul class="clientes__lista" data-clientes-lista>
+                {% for cliente in clientes %}
+                <li class="cliente">
+                    {% if cliente.url %}<a href="{{ cliente.url }}" target="_blank" rel="noopener">{% endif %}
+                    {% if cliente.logo %}
+                    <img src="{% static cliente.logo %}" alt="{{ cliente.nombre }}" loading="lazy">
+                    {% else %}
+                    <span class="cliente__nombre">{{ cliente.nombre }}</span>
+                    {% endif %}
+                    {% if cliente.url %}</a>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            <button class="clientes__flecha" type="button" aria-label="Clientes siguientes" data-clientes-siguiente>›</button>
+        </div>
+    </div>
+    {% endif %}
+</section>

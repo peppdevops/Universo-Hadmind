@@ -1,0 +1,79 @@
+<section class="contacto" id="contacto">
+    <div class="contacto__halo" aria-hidden="true"></div>
+    <div class="contacto__contenido">
+        <div class="contacto__columnas">
+            <div class="contacto__info">
+                <div class="etiqueta etiqueta--simple">CONTACTO</div>
+                <h2 class="contacto__titulo">Hablemos de lo que tu empresa necesita.</h2>
+                <p class="contacto__bajada">Cuéntanos qué quieres mejorar. Nuestro equipo te ayudará a encontrar el siguiente paso más conveniente para tu operación.</p>
+                <div class="contacto__separador" aria-hidden="true"></div>
+                <div class="contacto__etiqueta-sede">SEDE PRINCIPAL</div>
+                <p class="contacto__sede">{{ sitio.contacto.sede }}<br>CP {{ sitio.contacto.codigo_postal }}</p>
+                <p class="contacto__telefono">Tel. <a href="tel:{{ sitio.contacto.telefono_href }}">{{ sitio.contacto.telefono }}</a></p>
+                <a class="contacto__ubicaciones" href="#ubicaciones">Otras ubicaciones <span aria-hidden="true">↗</span></a>
+            </div>
+
+            <div class="contacto__tarjeta">
+                {# Temporal: hasta tener el modelo Lead del CRM, el envío abre WhatsApp con la consulta escrita (contacto.js) #}
+                <div data-form-panel>
+                    <div class="etiqueta etiqueta--simple">PREGÚNTANOS LO QUE QUIERAS</div>
+                    <h3 class="contacto__subtitulo">¿Cómo podemos ayudarte?</h3>
+                    <p class="contacto__ayuda">Completa tus datos y cuéntanos brevemente sobre tu consulta.</p>
+
+                    <form class="formulario" data-form-contacto data-whatsapp="{{ sitio.contacto.whatsapp_url }}">
+                        <label class="campo">
+                            <span>Motivo de tu consulta *</span>
+                            <select name="motivo" required>
+                                <option value="">Selecciona una opción</option>
+                                {% for motivo in motivos_consulta %}<option>{{ motivo }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <div class="formulario__fila">
+                            <label class="campo"><span>Nombre *</span><input name="nombre" type="text" autocomplete="given-name" required></label>
+                            <label class="campo"><span>Apellido *</span><input name="apellido" type="text" autocomplete="family-name" required></label>
+                        </div>
+                        <div class="formulario__fila">
+                            <label class="campo"><span>Correo empresarial *</span><input name="correo" type="email" autocomplete="email" required></label>
+                            <label class="campo"><span>Teléfono *</span><input name="telefono" type="tel" autocomplete="tel" required></label>
+                        </div>
+                        <div class="formulario__fila">
+                            <label class="campo"><span>Empresa *</span><input name="empresa" type="text" autocomplete="organization" required></label>
+                            <label class="campo"><span>Cargo</span><input name="cargo" type="text" autocomplete="organization-title"></label>
+                        </div>
+                        <div class="formulario__fila">
+                            <label class="campo"><span>Ubicación *</span><input name="ubicacion" type="text" placeholder="País o región" autocomplete="country-name" required></label>
+                            <label class="campo"><span>Ciudad</span><input name="ciudad" type="text" autocomplete="address-level2"></label>
+                        </div>
+                        <label class="campo"><span>Tu consulta o comentarios *</span><textarea name="consulta" rows="4" required></textarea></label>
+                        <label class="campo">
+                            <span>¿Cómo conociste a HADMIND? *</span>
+                            <select name="origen" required>
+                                <option value="">Selecciona una opción</option>
+                                {% for origen in origenes %}<option>{{ origen }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <div class="formulario__pie">
+                            <p>Al enviar este formulario aceptas que HADMIND utilice tus datos para responder tu consulta.</p>
+                            <button class="boton-pildora" type="submit">Enviar consulta <span aria-hidden="true">→</span></button>
+                        </div>
+                    </form>
+                    <noscript><p class="contacto__ayuda">Escríbenos por <a href="{{ sitio.contacto.whatsapp_url }}">WhatsApp</a> o a <a href="mailto:{{ sitio.contacto.correo }}">{{ sitio.contacto.correo }}</a>.</p></noscript>
+                </div>
+
+                <div class="contacto__enviado" role="status" hidden data-form-enviado>
+                    <div class="etiqueta etiqueta--simple">CONSULTA LISTA</div>
+                    <h3 class="contacto__subtitulo">Gracias, <span data-form-nombre></span>.</h3>
+                    <p class="contacto__ayuda">Abrimos WhatsApp con tu consulta ya escrita. Solo tienes que enviar el mensaje y nuestro equipo te responderá muy pronto.</p>
+                    <button class="boton-contorno" type="button" data-form-otra>Enviar otra consulta</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="ubicaciones" id="ubicaciones">
+            <div class="etiqueta etiqueta--simple">OTRAS UBICACIONES</div>
+            <h2 class="ubicaciones__titulo">Trabajamos sin fronteras.</h2>
+            <p>Acompañamos empresas de forma remota y coordinamos cada proyecto según su zona horaria y necesidades.</p>
+        </div>
+        <div class="contacto__linea" aria-hidden="true"></div>
+    </div>
+</section>
