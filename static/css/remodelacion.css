@@ -165,3 +165,19 @@
         display: none;
     }
 }
+
+/* ---------- Aviso del celular en el CRM (templates/solo_computador.html) ---------- */
+
+.remodelacion__titulo--chiste {
+    font-size: clamp(36px, 9vw, 72px);
+}
+
+.remodelacion__chiste {
+    max-width: 480px;
+    margin: 28px 0 0;
+    font-size: clamp(19px, 2.4vw, 24px);
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--texto);
+    text-wrap: pretty;
+}

@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -153,7 +155,8 @@ class ModoRemodelacionTests(TestCase):
         self.assertEqual(self.client.get('/').status_code, 503)
 
     def test_siguen_funcionando_admin_api_y_salud(self):
-        self.assertEqual(self.client.get(reverse('admin:login')).status_code, 200)
+        # El login (ahora el de allauth, con los 2 pasos) sigue abierto
+        self.assertEqual(self.client.get(reverse('account_login')).status_code, 200)
         self.assertEqual(self.client.get(reverse('salud')).content, b'ok')
         # La API responde ella misma (401 sin clave), no el aviso
         self.assertEqual(self.client.post(reverse('blog:api_crear')).status_code, 401)
@@ -165,3 +168,134 @@ class ModoRemodelacionTests(TestCase):
         r = self.client.get('/')
         self.assertEqual(r.status_code, 200)
         self.assertNotContains(r, 'solo el equipo ve el sitio')
+
+
+# --- Seguridad: admin secreto, bloqueo de intentos, 2 pasos, solo computador --
+
+from allauth.mfa.totp.internal.auth import (  # noqa: E402
+    TOTP, format_hotp_value, generate_totp_secret, hotp_value, yield_hotp_counters_from_time,
+)
+
+IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148'
+ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/140.0 Mobile Safari/537.36'
+TABLET_ANDROID = 'Mozilla/5.0 (Linux; Android 15; SM-X710) AppleWebKit/537.36 Chrome/140.0 Safari/537.36'
+IPAD = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15'
+
+
+def codigo_del_celular(secreto):
+    """El código de 6 dígitos que mostraría Google Authenticator ahora."""
+    return format_hotp_value(hotp_value(secreto, next(yield_hotp_counters_from_time())))
+
+
+class LoginSeguroTests(TestCase):
+    def setUp(self):
+        # Los límites de allauth se guardan en caché, que no se borra entre tests
+        cache.clear()
+        self.usuario = User.objects.create_user('laura', password='clave-larga-123', is_staff=True)
+
+    def entrar(self, clave='clave-larga-123', ip='10.0.0.1'):
+        return self.client.post(reverse('account_login'), {'login': 'laura', 'password': clave},
+                                REMOTE_ADDR=ip)
+
+    def test_admin_en_la_direccion_del_env(self):
+        self.assertEqual(reverse('admin:index'), '/' + settings.ADMIN_URL)
+
+    def test_login_del_admin_lleva_al_login_con_dos_pasos(self):
+        r = self.client.get(reverse('admin:index'))
+        self.assertRedirects(r, reverse('admin:login') + '?next=' + reverse('admin:index'),
+                             fetch_redirect_response=False)
+        r = self.client.get(reverse('admin:login'))
+        self.assertTrue(r['Location'].startswith(reverse('account_login')))
+
+    def test_nadie_se_registra_solo(self):
+        self.client.post('/cuenta/signup/', {'username': 'intruso', 'password1': 'Clave-Muy-Larga-99'})
+        self.assertFalse(User.objects.filter(username='intruso').exists())
+
+    def test_con_dos_pasos_pide_el_codigo_y_entra(self):
+        secreto = generate_totp_secret()
+        TOTP.activate(self.usuario, secreto)
+        r = self.entrar()
+        self.assertRedirects(r, reverse('mfa_authenticate'), fetch_redirect_response=False)
+        # Solo con la contraseña todavía no entra al admin
+        self.assertNotEqual(self.client.get(reverse('admin:index')).status_code, 200)
+        r = self.client.post(reverse('mfa_authenticate'), {'code': codigo_del_celular(secreto)})
+        self.assertEqual(self.client.get(reverse('admin:index')).status_code, 200)
+
+    def test_codigo_equivocado_no_entra(self):
+        TOTP.activate(self.usuario, generate_totp_secret())
+        self.entrar()
+        r = self.client.post(reverse('mfa_authenticate'), {'code': '000000'})
+        self.assertEqual(r.status_code, 200)  # vuelve a pedir el código
+        self.assertNotEqual(self.client.get(reverse('admin:index')).status_code, 200)
+
+    @override_settings(EXIGIR_DOS_PASOS=True)
+    def test_sin_dos_pasos_activados_lo_manda_a_activarlos(self):
+        self.entrar()  # usuario y contraseña, como en la vida real
+        r = self.client.get(reverse('admin:index'))
+        self.assertRedirects(r, reverse('mfa_activate_totp'), fetch_redirect_response=False)
+        # Activar es una acción delicada: allauth pide confirmar la contraseña
+        r = self.client.get(reverse('mfa_activate_totp'))
+        self.assertTrue(r['Location'].startswith(reverse('account_reauthenticate')))
+        self.client.post(reverse('account_reauthenticate'), {'password': 'clave-larga-123'})
+        # La pantalla de activación muestra el QR; al activarla con el código
+        # de la app, entra al admin.
+        r = self.client.get(reverse('mfa_activate_totp'))
+        self.assertContains(r, 'data:image/svg+xml')
+        secreto = r.context['form'].secret
+        r = self.client.post(reverse('mfa_activate_totp'), {'code': codigo_del_celular(secreto)})
+        self.assertRedirects(r, reverse('mfa_view_recovery_codes'), fetch_redirect_response=False)
+        self.assertContains(self.client.get(reverse('mfa_view_recovery_codes')), 'Ya los guardé, ir al CRM')
+        self.assertEqual(self.client.get(reverse('admin:index')).status_code, 200)
+
+    @override_settings(EXIGIR_DOS_PASOS=True)
+    def test_con_dos_pasos_activados_entra_al_admin(self):
+        TOTP.activate(self.usuario, generate_totp_secret())
+        self.client.force_login(self.usuario)
+        self.assertEqual(self.client.get(reverse('admin:index')).status_code, 200)
+
+    def test_bloqueo_al_quinto_intento(self):
+        for _ in range(5):
+            self.entrar(clave='mala')
+        # Ni con la contraseña correcta: bloqueado por 1 hora
+        r = self.entrar()
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, 'Acceso bloqueado', status_code=429)
+
+    def test_el_bloqueo_es_por_usuario_e_ip(self):
+        for _ in range(5):
+            self.entrar(clave='mala', ip='10.0.0.66')
+        # Desde otro lugar (otra IP) la persona del equipo sí puede entrar
+        r = self.entrar(ip='10.0.0.2')
+        self.assertEqual(r.status_code, 302)
+
+
+class SoloComputadorTests(TestCase):
+    def setUp(self):
+        self.usuario = User.objects.create_superuser('jefe', password='x')
+
+    def test_celular_ve_el_chiste_en_lo_interno(self):
+        self.client.force_login(self.usuario)
+        for agente in (IPHONE, ANDROID):
+            for ruta in (reverse('admin:index'), reverse('account_login'), '/bitacora/revisar/algo/'):
+                r = self.client.get(ruta, HTTP_USER_AGENT=agente)
+                self.assertTemplateUsed(r, 'solo_computador.html')
+                self.assertIn('User-Agent', r['Vary'])
+
+    def test_computador_y_tablets_entran(self):
+        self.client.force_login(self.usuario)
+        for agente in ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0', IPAD, TABLET_ANDROID):
+            r = self.client.get(reverse('admin:index'), HTTP_USER_AGENT=agente)
+            self.assertEqual(r.status_code, 200, agente)
+
+    def test_el_sitio_publico_si_abre_en_celular(self):
+        r = self.client.get('/', HTTP_USER_AGENT=IPHONE)
+        self.assertEqual(r.status_code, 200)
+        self.assertTemplateNotUsed(r, 'solo_computador.html')
+
+
+class SinRecuperacionPorCorreoTests(TestCase):
+    def test_no_hay_enlace_ni_pagina_de_recuperar_contrasena(self):
+        r = self.client.get(reverse('account_login'))
+        self.assertNotContains(r, '/cuenta/password/reset/')
+        r = self.client.get('/cuenta/password/reset/')
+        self.assertRedirects(r, reverse('account_login'), fetch_redirect_response=False)

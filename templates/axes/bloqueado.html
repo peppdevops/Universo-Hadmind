@@ -1,0 +1,11 @@
+{% extends "allauth/layouts/base.html" %}
+{% comment %}
+django-axes muestra esto tras 5 contraseñas malas seguidas (config/settings.py).
+Desbloquear antes de la hora: docker compose exec web python manage.py axes_reset
+{% endcomment %}
+{% block head_title %}Acceso bloqueado{% endblock %}
+{% block content %}
+    <div class="border-b border-base-200 mb-6 pb-4 dark:border-base-800"><h1 class="font-semibold text-xl tracking-tight text-font-important-light dark:text-font-important-dark">Acceso bloqueado por 1 hora</h1></div>
+    <div class="mb-4 px-3 py-2.5 leading-[18px] rounded-default bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">Hubo demasiados intentos con una contraseña incorrecta.</div>
+    <p class="mb-4 leading-relaxed">Por seguridad, este usuario no puede entrar desde aquí durante 1 hora. Si fuiste tú y no recuerdas la contraseña, pídele al administrador que te asigne una nueva y te desbloquee.</p>
+{% endblock %}

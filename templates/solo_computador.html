@@ -1,0 +1,36 @@
+{% load static %}<!DOCTYPE html>
+{% comment %}
+Lo que ve quien abre el admin, el CRM, el login o la revisión de la Bitácora
+desde un celular (core/middleware.py, SoloComputador). Mismo estilo que el
+aviso de remodelación. El chiste cambia en cada visita.
+{% endcomment %}
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>HADMIND · Ábrelo en el computador</title>
+    <meta name="theme-color" content="#020617">
+    <link rel="preload" href="{% static 'fonts/inter/inter-latin.woff2' %}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/remodelacion.css' %}">
+</head>
+<body class="remodelacion">
+    <main class="remodelacion__contenido">
+        <h1 class="remodelacion__titulo remodelacion__titulo--chiste">
+            <span class="resaltado">
+                <svg class="resaltado__trazo" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M7 17 C 48 9, 112 15, 162 10 S 258 8, 295 13 C 292 22, 298 31, 293 39 C 296 45, 291 50, 294 53 C 236 57, 158 50, 96 55 S 26 54, 4 51 C 9 42, 2 33, 6 25 C 3 22, 8 19, 7 17 Z"/>
+                </svg>
+                <span class="resaltado__texto">{{ titulo }}</span>
+            </span>
+        </h1>
+
+        <p class="remodelacion__chiste">{{ chiste }}</p>
+
+        <img class="remodelacion__logo" src="{% static 'landing/img/logo-blanco.png' %}" alt="HADMIND" width="649" height="338">
+
+        <p class="remodelacion__sede">El CRM de HADMIND solo funciona en el computador.</p>
+    </main>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{% load allauth %}
+{# Botón con las clases del componente de unfold (unfold/components/button.html). #}
+{# allauth indica el tipo con "tags": danger → rojo; link/outline/cancel → secundario; resto → principal. #}
+{% if "danger" in attrs.tags %}
+    {% firstof "border border-transparent bg-red-600 text-white hover:bg-red-600/80" as variante %}
+{% elif "link" in attrs.tags or "outline" in attrs.tags or "cancel" in attrs.tags or "secondary" in attrs.tags %}
+    {% firstof "bg-base-100 border border-transparent text-font-important-light hover:bg-base-100/80 dark:bg-base-800 dark:text-font-important-dark dark:hover:bg-base-800/80" as variante %}
+{% else %}
+    {% firstof "border border-transparent bg-primary-600 text-white hover:bg-primary-600/80" as variante %}
+{% endif %}
+<{% if attrs.href %}a href="{{ attrs.href }}"{% else %}button{% endif %} {% if attrs.form %}form="{{ attrs.form }}"{% endif %} {% if attrs.id %}id="{{ attrs.id }}"{% endif %} {% if attrs.name %}name="{{ attrs.name }}"{% endif %} {% if attrs.value %}value="{{ attrs.value }}"{% endif %} {% if attrs.type %}type="{{ attrs.type }}"{% endif %}
+   class="cursor-pointer font-medium inline-flex items-center justify-center gap-1 px-3 py-2 rounded-default w-full whitespace-nowrap {{ variante }}">{% slot %}{% endslot %}</{% if attrs.href %}a{% else %}button{% endif %}>

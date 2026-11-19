@@ -47,8 +47,8 @@ el CSS normal (flex, grid, <style>).
                                 </tr>
                                 <tr>
                                     <td style="padding:12px 24px 24px;font-size:13px;line-height:1.5;color:#5B6B86;">
-                                        En esa página puedes leerlo completo, publicarlo, descartarlo o cambiar la imagen.
-                                        Abrir el enlace no publica nada. Vence en {{ dias_vigencia }} días; después puedes revisarlo en el admin, en Contenido → Bitácora.
+                                        <strong style="color:#020617;">Ábrelo desde el computador:</strong> en el celular la página de revisión no funciona.
+                                        Ahí puedes leerlo completo, publicarlo, descartarlo o cambiar la imagen; abrir el enlace no publica nada. Vence en {{ dias_vigencia }} días; después puedes revisarlo en el admin, en Contenido → Bitácora.
                                         {% if articulo.fuente_url %}<br><br>Fuente: <a href="{{ articulo.fuente_url }}" style="color:#2F6DB8;">{{ articulo.fuente_nombre|default:articulo.fuente_url }}</a>{% endif %}
                                     </td>
                                 </tr>

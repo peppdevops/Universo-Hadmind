@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 
 from django.templatetags.static import static
 from django.urls import reverse_lazy
@@ -50,6 +51,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'whitenoise.runserver_nostatic',  # en desarrollo también sirve WhiteNoise (sin caché vieja)
     'django.contrib.staticfiles',
+    # Login con verificación en 2 pasos (código del celular) y bloqueo de intentos
+    'allauth',
+    'allauth.account',
+    'allauth.mfa',
+    'axes',
 
     'core',
     'apps.landing',
@@ -64,10 +70,17 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    # Lo interno (admin, CRM, login, revisión) solo desde el computador
+    'core.middleware.SoloComputador',
     # Después de Authentication: necesita saber si quien entra es del equipo
     'core.middleware.ModoRemodelacion',
+    # El equipo no entra al admin sin activar la verificación en 2 pasos
+    'core.middleware.ExigirDosPasos',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Al final, como pide django-axes: convierte el bloqueo en la página de aviso
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -83,6 +96,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.sitio',
+                'core.context_processors.unfold_en_cuenta',
             ],
         },
     },
@@ -283,6 +297,87 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # El navegador recuerda por 1 año que este sitio va solo por https
+    # (empezar con 1 año es seguro porque el sitio ya tiene certificado).
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # n8n.hadmind.tech es otro dominio; no aplica
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Avisos de "manage.py check --deploy" revisados y aceptados a propósito:
+SILENCED_SYSTEM_CHECKS = [
+    # Django no envía correos: los de la Bitácora los manda n8n y no hay
+    # recuperación de contraseña por correo. Si un día se necesita, configurar SMTP.
+    'mail.E001',
+    # http → https lo hace Nginx (Certbot). Si lo hiciera Django, el chequeo de
+    # salud de Docker (http://localhost:8000/salud/ dentro del contenedor) fallaría.
+    'security.W008',
+    # HSTS en subdominios: si alguno de hadmind.com.co no tiene https, dejaría de abrir.
+    'security.W005',
+    # HSTS "preload": compromiso casi permanente con los navegadores; no hace falta.
+    'security.W021',
+]
+
+
+# ---------------------------------------------------------------------------
+# Seguridad del acceso al admin y al CRM
+# ---------------------------------------------------------------------------
+
+# Dirección del admin. En el VPS, una difícil de adivinar (los bots prueban
+# /admin/). Se normaliza a "algo/" para que la ruta siempre funcione.
+ADMIN_URL = os.environ.get('ADMIN_URL', 'admin').strip('/') + '/'
+
+# La sesión dura máximo 12 horas y se cierra al cerrar el navegador.
+SESSION_COOKIE_AGE = 60 * 60 * 12
+ACCOUNT_SESSION_REMEMBER = False
+
+# Login (django-allauth): usuario + contraseña, y después el código de 6
+# dígitos de la app del celular. No hay registro público ni recuperación por
+# correo: las cuentas las crea el superusuario en Equipo → Usuarios.
+LOGIN_URL = 'account_login'
+LOGIN_REDIRECT_URL = 'admin:index'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
+ACCOUNT_ADAPTER = 'core.cuenta.AdaptadorCuenta'
+ACCOUNT_LOGIN_METHODS = {'username'}
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_NOTIFICATIONS = False
+
+# Verificación en 2 pasos: app del celular (Google Authenticator, Microsoft
+# Authenticator...) + 10 códigos de recuperación por si se pierde el celular.
+MFA_SUPPORTED_TYPES = ['totp', 'recovery_codes']
+MFA_TOTP_ISSUER = 'HADMIND'
+
+# Bloqueo de intentos (django-axes): 5 contraseñas malas para el mismo usuario
+# desde la misma IP lo bloquean 1 hora. Por usuario + IP: un atacante en otro
+# lugar no puede dejar por fuera a alguien del equipo.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # primero: revisa el bloqueo
+    'allauth.account.auth_backends.AuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # horas
+AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = 'axes/bloqueado.html'
+# allauth trae otro bloqueo por usuario (5 fallos en 5 min, desde CUALQUIER IP):
+# con él un atacante podría dejar por fuera a alguien del equipo. Se deja solo
+# su límite por IP (10 intentos por minuto) y el bloqueo lo hace axes.
+ACCOUNT_RATE_LIMITS = {'login_failed': '10/m/ip'}
+# En el VPS la app está detrás de Nginx: la IP real llega en X-Forwarded-For.
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR']
+
+# Nadie del equipo entra al admin sin activar la verificación en 2 pasos
+# (core.middleware.ExigirDosPasos).
+EXIGIR_DOS_PASOS = True
+
+# Los tests no dependen del .env de quien los corre: el aviso de remodelación
+# y la obligación de los 2 pasos arrancan apagados, y los tests de esas reglas
+# los encienden con override_settings.
+if 'test' in sys.argv:
+    SITIO_EN_REMODELACION = False
+    EXIGIR_DOS_PASOS = False
 
 
 # Email

@@ -20,9 +20,11 @@ Hadmind: Django 6.1 site that will replace the current static site at hadmind.co
 
 ## Configuration
 
-All environment-specific settings come from `.env` (template: `.env.example`), loaded by docker-compose `env_file`, not by Django. `DJANGO_DEBUG=1` enables debug; when it is off, settings also enable `SECURE_PROXY_SSL_HEADER` and secure cookies (the app runs behind Nginx terminating HTTPS). `DJANGO_CSRF_TRUSTED_ORIGINS` must list the `https://` origins in production or admin/form POSTs fail. In production `DJANGO_ALLOWED_HOSTS` must include `localhost` because the web container's healthcheck requests `http://localhost:8000/`.
+All environment-specific settings come from `.env` (template: `.env.example`), loaded by docker-compose `env_file`, not by Django. `DJANGO_DEBUG=1` enables debug; when it is off, settings also enable `SECURE_PROXY_SSL_HEADER` and secure cookies (the app runs behind Nginx terminating HTTPS). `DJANGO_CSRF_TRUSTED_ORIGINS` must list the `https://` origins in production or admin/form POSTs fail. In production `DJANGO_ALLOWED_HOSTS` must include `localhost` because the web container's healthcheck requests `http://localhost:8000/salud/` (not `/`, which returns 503 while the remodel notice is on).
 
 Blog (Bitácora) automation: `N8N_API_TOKEN` (Bearer key for `/api/bitacora/`; empty = API rejects everything) and `SITIO_URL` (public base URL used for links in the approval email and Open Graph tags). Uploaded images live in `MEDIA_ROOT` (`media/`, bind-mounted in production and served by Nginx — see `despliegue/nginx-hadmind.conf`). The n8n workflows and setup steps are in `n8n/` (`n8n/LEEME.md`).
+
+Access security: admin path from `ADMIN_URL` (secret in production); login is django-allauth with mandatory TOTP 2FA for staff (`core.middleware.ExigirDosPasos`; admin login redirected to `/cuenta/login/`); django-axes locks a username+IP for 1 h after 5 failures (`axes_reset` to unlock); `core.middleware.SoloComputador` shows a joke page instead of admin/CRM/login/blog-review on phones; `SITIO_EN_REMODELACION=1` shows the "en remodelación" page to anonymous visitors. Tests force remodel mode and 2FA enforcement off (see end of the security block in settings). Backups/restore: `despliegue/backup.sh`, `despliegue/LEEME.md`.
 
 Run `manage.py` inside the `web` container; the host `venv/` is for editor tooling only (`POSTGRES_HOST=db` doesn't resolve on the host).
 

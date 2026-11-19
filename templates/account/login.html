@@ -1,0 +1,22 @@
+{% extends "account/base_entrance.html" %}
+{% load allauth %}
+{% comment %}
+Login del equipo. Como el de allauth, pero sin "regístrate": las cuentas las
+crea el superusuario. Después de la contraseña allauth pide el código del celular.
+{% endcomment %}
+{% block head_title %}Iniciar sesión{% endblock head_title %}
+{% block content %}
+    {% element h1 %}Iniciar sesión{% endelement %}
+    {% url 'account_login' as login_url %}
+    {% element form form=form method="post" action=login_url %}
+        {% slot body %}
+            {% csrf_token %}
+            {% element fields form=form %}{% endelement %}
+            {{ redirect_field }}
+        {% endslot %}
+        {% slot actions %}
+            {% element button type="submit" %}Entrar{% endelement %}
+        {% endslot %}
+    {% endelement %}
+    <p class="mt-4 text-xs leading-relaxed text-base-500">¿Olvidaste la contraseña? Pídele al administrador que te asigne una nueva.</p>
+{% endblock content %}
