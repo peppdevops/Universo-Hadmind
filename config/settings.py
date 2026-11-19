@@ -201,6 +201,11 @@ UNFOLD = {
     'SITE_HEADER': 'HADMIND',           # nombre arriba del menú lateral
     'SITE_SUBHEADER': 'CRM interno',
     'SITE_URL': '/',                    # el nombre lleva a la landing
+    # El mismo favicon del sitio (templates/partials/_favicon.html)
+    'SITE_FAVICONS': [
+        {'rel': 'icon', 'sizes': '32x32', 'type': 'image/png', 'href': lambda request: static('favicon/favicon-32.png')},
+        {'rel': 'apple-touch-icon', 'href': lambda request: static('favicon/apple-touch-icon.png')},
+    ],
     'SHOW_VIEW_ON_SITE': False,         # los contactos no tienen página pública
     # Datos del Inicio (dashboard). La página es templates/admin/index.html.
     'DASHBOARD_CALLBACK': 'core.dashboard.dashboard_callback',

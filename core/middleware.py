@@ -64,8 +64,8 @@ class SoloComputador:
 
 # Lo que sigue funcionando con el aviso puesto: estilos e imágenes, chequeo de
 # salud de Docker, la API de n8n, la página de revisión del correo (tiene su
-# propia llave: el enlace firmado) y el login (/cuenta/).
-RUTAS_LIBRES = ('/static/', '/media/', '/salud/', '/api/', '/bitacora/revisar/', '/cuenta/')
+# propia llave: el enlace firmado), el login (/cuenta/) y el favicon.
+RUTAS_LIBRES = ('/static/', '/media/', '/salud/', '/api/', '/bitacora/revisar/', '/cuenta/', '/favicon.ico')
 
 # 1 día: le dice a Google "es temporal, vuelve mañana"
 REINTENTAR_EN = 60 * 60 * 24

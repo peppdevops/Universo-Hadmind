@@ -299,3 +299,20 @@ class SinRecuperacionPorCorreoTests(TestCase):
         self.assertNotContains(r, '/cuenta/password/reset/')
         r = self.client.get('/cuenta/password/reset/')
         self.assertRedirects(r, reverse('account_login'), fetch_redirect_response=False)
+
+
+class FaviconTests(TestCase):
+    def test_todas_las_paginas_enlazan_el_favicon(self):
+        self.assertContains(self.client.get('/'), 'favicon/favicon-32.png')
+        self.assertContains(self.client.get(reverse('account_login')), 'favicon/favicon-32.png')
+        with self.settings(SITIO_EN_REMODELACION=True):
+            self.assertContains(self.client.get('/'), 'favicon/favicon-32.png', status_code=503)
+        r = self.client.get('/', HTTP_USER_AGENT='Mozilla/5.0 (iPhone) Mobile')
+        self.assertContains(r, 'apple-touch-icon')
+
+    def test_favicon_ico_en_la_raiz(self):
+        for remodelacion in (False, True):  # también con el aviso encendido
+            with self.settings(SITIO_EN_REMODELACION=remodelacion):
+                r = self.client.get('/favicon.ico')
+                self.assertEqual(r.status_code, 301)
+                self.assertIn('favicon/favicon.ico', r['Location'])

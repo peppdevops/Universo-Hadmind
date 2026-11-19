@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-from core.views import salud
+from core.views import favicon, salud
 
 # El login propio del admin (solo usuario y contraseña) se cambia por el de
 # allauth, que pide además el código del celular. Sin esto, /admin/login/
@@ -22,6 +22,8 @@ urlpatterns = [
     path('cuenta/password/reset/', RedirectView.as_view(pattern_name='account_login')),
     path('cuenta/', include('allauth.urls')),
     path('salud/', salud, name='salud'),
+    # Los navegadores piden /favicon.ico solos, sin mirar el HTML
+    path('favicon.ico', favicon),
     path('', include('apps.blog.urls')),
     path('', include('apps.landing.urls')),
 ]
