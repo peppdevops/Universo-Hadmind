@@ -145,3 +145,25 @@ def tiempo_relativo(fecha, ahora=None):
             n = segundos // unidad
             return f'Hace {n} {singular if n == 1 else plural}'
     return 'Hace un momento'
+
+
+# --- Parte pública ----------------------------------------------------------
+
+ARTICULOS_EN_INICIO = 4   # la más nueva y las 3 anteriores (boceto de la landing)
+ARTICULOS_POR_PAGINA = 12  # 12 se reparte bien en 4, 3, 2 o 1 columnas
+
+
+def articulos_para_inicio():
+    """Los artículos de la sección "La Bitácora" del inicio."""
+    return list(Articulo.objects.publicados()[:ARTICULOS_EN_INICIO])
+
+
+def relacionados(articulo, cantidad=3):
+    """Otros artículos para el final de la página: primero los de la misma
+    categoría y, si no alcanzan, los más nuevos de cualquier categoría."""
+    otros = Articulo.objects.publicados().exclude(pk=articulo.pk)
+    elegidos = list(otros.filter(categoria=articulo.categoria)[:cantidad])
+    if len(elegidos) < cantidad:
+        ya = [a.pk for a in elegidos]
+        elegidos += list(otros.exclude(pk__in=ya)[:cantidad - len(elegidos)])
+    return elegidos

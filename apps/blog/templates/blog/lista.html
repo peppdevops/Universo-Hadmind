@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}La Bitácora{% if pagina.number > 1 %} · Página {{ pagina.number }}{% endif %} · HADMIND{% endblock %}
+{% block meta_description %}Noticias sobre software, inteligencia artificial y automatización para pymes, actualizadas cada semana.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'blog/css/bitacora.css' %}">
+{% endblock %}
+
+{% block content %}
+<main>
+    <header class="bitacora-cabeza">
+        <div class="bitacora-cabeza__contenido">
+            <div class="bitacora-etiqueta">BLOG</div>
+            <h1 class="bitacora-cabeza__titulo">La Bitácora</h1>
+            <p class="bitacora-cabeza__bajada">Lo que está pasando en el mundo de la tecnología, actualizado cada semana.</p>
+        </div>
+    </header>
+
+    <section class="bitacora-pagina">
+        {% if articulos %}
+            <div class="bitacora-grid">
+                {% for articulo in articulos %}
+                    {% include "blog/_tarjeta.html" %}
+                {% endfor %}
+            </div>
+
+            {% if pagina.has_other_pages %}
+            <nav class="bitacora-paginas" aria-label="Páginas">
+                {% if pagina.has_previous %}
+                    <a class="bitacora-boton" href="?pagina={{ pagina.previous_page_number }}" rel="prev"><span aria-hidden="true">←</span> Más nuevos</a>
+                {% endif %}
+                <span class="bitacora-paginas__actual">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+                {% if pagina.has_next %}
+                    <a class="bitacora-boton" href="?pagina={{ pagina.next_page_number }}" rel="next">Más antiguos <span aria-hidden="true">→</span></a>
+                {% endif %}
+            </nav>
+            {% endif %}
+        {% else %}
+            <p class="bitacora-vacia">Pronto publicaremos el primer artículo. Vuelve en unos días.</p>
+        {% endif %}
+    </section>
+    {% include "blog/_ventana.html" %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'blog/js/bitacora.js' %}" defer></script>
+{% endblock %}

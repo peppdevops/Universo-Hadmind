@@ -1,0 +1,28 @@
+{% load bitacora %}
+{% comment %}
+Tarjeta de un artículo (inicio, /bitacora/ y "Más de la Bitácora").
+El <template> guarda el texto completo para la ventana que abre bitacora.js;
+el navegador no lo muestra ni carga sus imágenes hasta que se copia.
+{% endcomment %}
+<article class="bitacora-tarjeta" data-bitacora-tarjeta>
+    <a class="bitacora-tarjeta__enlace" href="{% url 'blog:detalle' articulo.slug %}">
+        <div class="bitacora-tarjeta__imagen">
+            {% if articulo.imagen %}
+            <img src="{{ articulo.imagen.url }}" alt="{{ articulo.texto_alternativo }}" loading="lazy" decoding="async">
+            {% endif %}
+        </div>
+        <div class="bitacora-tarjeta__cuerpo">
+            <span class="bitacora-categoria">{{ articulo.get_categoria_display|upper }}</span>
+            <h3 class="bitacora-tarjeta__titulo">{{ articulo.titulo }}</h3>
+            <time class="bitacora-tarjeta__fecha" datetime="{{ articulo.publicado_en|date:'c' }}">{{ articulo.publicado_en|hace }}</time>
+        </div>
+    </a>
+    <template data-bitacora-contenido>
+        <span class="bitacora-categoria">{{ articulo.get_categoria_display|upper }}</span>
+        <h3 class="bitacora-ventana__titulo" data-bitacora-titulo>{{ articulo.titulo }}</h3>
+        <p class="bitacora-ventana__resumen">{{ articulo.resumen }}</p>
+        {# contenido_html ya viene limpio (nh3) desde que se guardó el artículo #}
+        <div class="bitacora-texto">{{ articulo.contenido_html|safe }}</div>
+        <a class="bitacora-ventana__leer" href="{% url 'blog:detalle' articulo.slug %}">Leer en su página <span aria-hidden="true">→</span></a>
+    </template>
+</article>

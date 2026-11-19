@@ -12,12 +12,15 @@ CONTACTO = {
     'codigo_postal': '055410',
 }
 
-# Secciones de la landing que aparecen en el menú. Blog y Asistente IA se
-# añaden cuando existan sus apps, para no dejar enlaces a secciones vacías.
+# Enlaces del menú. Los de dos valores son secciones de la landing (#id); los
+# de tres llevan a otra página por su nombre de URL. La Bitácora va a su
+# página y no a #bitacora porque esa sección se oculta mientras no haya
+# artículos publicados. Asistente IA se añade cuando exista su app.
 MENU = [
     ('inicio', 'Inicio'),
     ('nosotros', 'Nosotros'),
     ('servicios', 'Servicios'),
+    ('bitacora', 'Bitácora', 'blog:lista'),
     ('contacto', 'Contacto'),
 ]
 

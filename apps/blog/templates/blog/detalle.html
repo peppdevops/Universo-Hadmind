@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static bitacora %}
+
+{% block title %}{{ articulo.titulo }} · La Bitácora · HADMIND{% endblock %}
+{% block meta_description %}{{ articulo.resumen }}{% endblock %}
+
+{% block extra_head %}
+    <link rel="canonical" href="{{ url_absoluta }}">
+    {# Vista previa al compartir en WhatsApp, LinkedIn, etc. #}
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="HADMIND">
+    <meta property="og:title" content="{{ articulo.titulo }}">
+    <meta property="og:description" content="{{ articulo.resumen }}">
+    <meta property="og:url" content="{{ url_absoluta }}">
+    {% if imagen_absoluta %}<meta property="og:image" content="{{ imagen_absoluta }}">
+    <meta name="twitter:card" content="summary_large_image">{% endif %}
+    <meta property="article:published_time" content="{{ articulo.publicado_en|date:'c' }}">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'blog/css/bitacora.css' %}">
+{% endblock %}
+
+{% block content %}
+<main>
+    <article>
+        <header class="bitacora-cabeza bitacora-cabeza--articulo">
+            <div class="bitacora-cabeza__contenido">
+                <a class="bitacora-volver" href="{% url 'blog:lista' %}"><span aria-hidden="true">←</span> La Bitácora</a>
+                <span class="bitacora-categoria bitacora-categoria--clara">{{ articulo.get_categoria_display|upper }}</span>
+                <h1 class="bitacora-cabeza__titulo bitacora-cabeza__titulo--articulo">{{ articulo.titulo }}</h1>
+                <p class="bitacora-cabeza__bajada">{{ articulo.resumen }}</p>
+                <time class="bitacora-cabeza__fecha" datetime="{{ articulo.publicado_en|date:'c' }}">{# En español el mes va en minúscula; Django lo da con mayúscula #}{{ articulo.publicado_en|date:'j' }} de {{ articulo.publicado_en|date:'F'|lower }} de {{ articulo.publicado_en|date:'Y' }}</time>
+            </div>
+        </header>
+
+        <div class="bitacora-articulo">
+            {% if articulo.imagen %}
+            <img class="bitacora-articulo__imagen" src="{{ articulo.imagen.url }}" alt="{{ articulo.texto_alternativo }}">
+            {% endif %}
+            {# contenido_html ya viene limpio (nh3) desde que se guardó el artículo #}
+            <div class="bitacora-texto bitacora-texto--grande">{{ articulo.contenido_html|safe }}</div>
+            {% if articulo.fuente_url %}
+            <p class="bitacora-articulo__fuente">Fuente: <a href="{{ articulo.fuente_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ articulo.fuente_nombre|default:articulo.fuente_url }}</a></p>
+            {% endif %}
+        </div>
+    </article>
+
+    {% if relacionados %}
+    <section class="bitacora-pagina bitacora-pagina--relacionados" aria-labelledby="mas-bitacora">
+        <div class="bitacora-relacionados__cabeza">
+            <h2 class="bitacora-relacionados__titulo" id="mas-bitacora">Más de la Bitácora</h2>
+            <a class="bitacora-boton" href="{% url 'blog:lista' %}">Ver todo el blog <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="bitacora-grid bitacora-grid--tres">
+            {% for articulo in relacionados %}
+                {% include "blog/_tarjeta.html" %}
+            {% endfor %}
+        </div>
+    </section>
+    {% include "blog/_ventana.html" %}
+    {% endif %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+{% if relacionados %}<script src="{% static 'blog/js/bitacora.js' %}" defer></script>{% endif %}
+{% endblock %}

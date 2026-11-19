@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.core import signing
-from django.shortcuts import redirect, render
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 
 from . import services
@@ -50,3 +51,25 @@ def revisar(request, token):
                     return redirect(request.path)
 
     return render(request, 'blog/revisar.html', {'articulo': articulo, 'form_imagen': form_imagen})
+
+
+# --- Páginas públicas -------------------------------------------------------
+
+def lista(request):
+    """/bitacora/: todos los artículos publicados, del más nuevo al más viejo."""
+    pagina = Paginator(Articulo.objects.publicados(), services.ARTICULOS_POR_PAGINA).get_page(
+        request.GET.get('pagina'))
+    return render(request, 'blog/lista.html', {'pagina': pagina, 'articulos': pagina.object_list})
+
+
+def detalle(request, slug):
+    """Página de un artículo. Borradores y descartados dan 404: solo se ven en
+    la página de revisión del correo o en el admin."""
+    articulo = get_object_or_404(Articulo.objects.publicados(), slug=slug)
+    return render(request, 'blog/detalle.html', {
+        'articulo': articulo,
+        'relacionados': services.relacionados(articulo),
+        # WhatsApp, LinkedIn y Google necesitan direcciones completas (https://...).
+        'url_absoluta': request.build_absolute_uri(),
+        'imagen_absoluta': request.build_absolute_uri(articulo.imagen.url) if articulo.imagen else '',
+    })

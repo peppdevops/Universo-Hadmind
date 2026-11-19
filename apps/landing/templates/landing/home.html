@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'landing/css/landing.css' %}">
+{% if articulos_bitacora %}<link rel="stylesheet" href="{% static 'blog/css/bitacora.css' %}">{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -11,6 +12,7 @@
     {% include "landing/sections/_metricas.html" %}
     {% include "landing/sections/_nosotros.html" %}
     {% include "landing/sections/_servicios.html" %}
+    {% include "landing/sections/_bitacora.html" %}
     {% include "landing/sections/_contacto.html" %}
 </main>
 {% endblock %}
@@ -21,4 +23,5 @@
 <script src="{% static 'landing/js/clientes.js' %}" defer></script>
 <script src="{% static 'landing/js/servicios.js' %}" defer></script>
 <script src="{% static 'landing/js/contacto.js' %}" defer></script>
+{% if articulos_bitacora %}<script src="{% static 'blog/js/bitacora.js' %}" defer></script>{% endif %}
 {% endblock %}

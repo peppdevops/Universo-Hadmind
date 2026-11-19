@@ -1,0 +1,22 @@
+{# La Bitácora en el inicio: la noticia más nueva y las 3 anteriores. Sin artículos publicados no se muestra. #}
+{% if articulos_bitacora %}
+<section class="bitacora-inicio" id="bitacora">
+    <div class="bitacora-recuadro">
+        <div class="bitacora-recuadro__adornos" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+        <div class="bitacora-recuadro__cabeza">
+            <div>
+                <div class="bitacora-etiqueta">BLOG</div>
+                <h2 class="bitacora-recuadro__titulo">La Bitácora</h2>
+                <p class="bitacora-recuadro__bajada">Lo que está pasando en el mundo de la tecnología, actualizado cada semana.</p>
+            </div>
+            <a class="bitacora-boton-claro" href="{% url 'blog:lista' %}">Ver todo el blog <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="bitacora-grid">
+            {% for articulo in articulos_bitacora %}
+                {% include "blog/_tarjeta.html" %}
+            {% endfor %}
+        </div>
+    </div>
+    {% include "blog/_ventana.html" %}
+</section>
+{% endif %}

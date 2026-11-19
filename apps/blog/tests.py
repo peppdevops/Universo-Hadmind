@@ -225,3 +225,89 @@ class AdminBitacoraTests(TestCase):
         articulo.refresh_from_db()
         self.assertEqual(articulo.estado, Articulo.Estado.PUBLICADO)
         self.assertIsNotNone(articulo.publicado_en)
+
+
+def publicado(dias_atras=0, **cambios):
+    """Artículo publicado hace `dias_atras` días."""
+    n = Articulo.objects.count() + 1
+    cambios.setdefault('fuente_url', f'https://ejemplo.com/pub-{n}')
+    cambios.setdefault('slug', f'articulo-{n}')
+    cambios.setdefault('titulo', f'Artículo {n}')
+    articulo = crear_articulo(estado=Articulo.Estado.PUBLICADO, **cambios)
+    # publicado_en lo fija save(); se mueve a mano para ordenar por fecha
+    Articulo.objects.filter(pk=articulo.pk).update(publicado_en=timezone.now() - timedelta(days=dias_atras))
+    articulo.refresh_from_db()
+    return articulo
+
+
+class InicioBitacoraTests(TestCase):
+    def test_sin_publicados_no_sale_la_seccion(self):
+        crear_articulo()  # borrador
+        r = self.client.get(reverse('landing:home'))
+        self.assertNotContains(r, 'id="bitacora"')
+        self.assertNotContains(r, 'bitacora.js')
+
+    def test_muestra_la_mas_nueva_y_tres_anteriores(self):
+        for dias in (5, 1, 9, 3, 20):
+            publicado(dias, titulo=f'Hace {dias} días')
+        crear_articulo(titulo='Borrador oculto', fuente_url='https://ejemplo.com/b', slug='b')
+        r = self.client.get(reverse('landing:home'))
+        self.assertContains(r, 'id="bitacora"')
+        titulos = [a.titulo for a in r.context['articulos_bitacora']]
+        self.assertEqual(titulos, ['Hace 1 días', 'Hace 3 días', 'Hace 5 días', 'Hace 9 días'])
+        self.assertNotContains(r, 'Borrador oculto')
+
+    def test_la_ventana_trae_el_texto_completo(self):
+        publicado(contenido='## Detalle\n\nEl resto de la noticia.')
+        r = self.client.get(reverse('landing:home'))
+        self.assertContains(r, 'data-bitacora-contenido')
+        self.assertContains(r, '<h2>Detalle</h2>', html=False)
+        self.assertContains(r, 'Leer en su página')
+
+    def test_menu_tiene_bitacora(self):
+        r = self.client.get(reverse('landing:home'))
+        self.assertContains(r, f'href="{reverse("blog:lista")}"')
+        self.assertContains(r, 'Bitácora')
+
+
+class PaginasPublicasTests(TestCase):
+    def test_lista_vacia_responde(self):
+        r = self.client.get(reverse('blog:lista'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'Pronto publicaremos')
+
+    def test_lista_pagina_de_12_en_12(self):
+        for dias in range(14):
+            publicado(dias)
+        r = self.client.get(reverse('blog:lista'))
+        self.assertEqual(len(r.context['articulos']), 12)
+        self.assertContains(r, '?pagina=2')
+        r = self.client.get(reverse('blog:lista') + '?pagina=2')
+        self.assertEqual(len(r.context['articulos']), 2)
+        # Una página que no existe muestra la última, no un error
+        self.assertEqual(self.client.get(reverse('blog:lista') + '?pagina=99').status_code, 200)
+
+    def test_detalle_publicado(self):
+        articulo = publicado()
+        r = self.client.get(reverse('blog:detalle', args=[articulo.slug]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, articulo.titulo)
+        self.assertContains(r, 'property="og:title"')
+        self.assertContains(r, 'rel="canonical" href="http://testserver/bitacora/')
+
+    def test_borrador_y_descartado_dan_404(self):
+        borrador = crear_articulo(slug="borrador")
+        descartado = crear_articulo(fuente_url='https://ejemplo.com/d', slug='d',
+                                    estado=Articulo.Estado.DESCARTADO)
+        for articulo in (borrador, descartado):
+            self.assertEqual(self.client.get(reverse('blog:detalle', args=[articulo.slug])).status_code, 404)
+
+    def test_relacionados_prefieren_la_misma_categoria(self):
+        articulo = publicado(categoria='software')
+        misma = publicado(5, categoria='software')
+        otras = [publicado(dias, categoria='pymes') for dias in (1, 2, 3)]
+        r = self.client.get(reverse('blog:detalle', args=[articulo.slug]))
+        relacionados = r.context['relacionados']
+        self.assertEqual(relacionados[0], misma)
+        self.assertEqual(relacionados[1:], otras[:2])
+        self.assertNotIn(articulo, relacionados)
