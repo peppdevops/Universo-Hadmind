@@ -1,9 +1,12 @@
 asgiref==3.12.1
-Django==6.1.2
 django-unfold==0.110.1
+Django==6.1.2
 gunicorn==26.2.0
-psycopg==3.3.6
+Markdown==3.11.3
+nh3==0.3.8
+Pillow==13.0.0
 psycopg-binary==3.3.6
+psycopg==3.3.6
 sqlparse==0.6.0
 tzdata==2026.5
 whitenoise==6.12.0

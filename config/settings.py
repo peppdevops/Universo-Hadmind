@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'core',
     'apps.landing',
     'apps.crm',
+    'apps.blog',
 ]
 
 MIDDLEWARE = [
@@ -141,6 +142,15 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Archivos subidos (imágenes de la Bitácora). WhiteNoise NO los sirve: en
+# desarrollo los sirve Django (config/urls.py) y en el VPS, Nginx.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Clave que n8n envía para crear artículos de la Bitácora (apps/blog/api.py).
+# Vacía = la API rechaza todo: así no queda abierta por olvido.
+N8N_API_TOKEN = os.environ.get('N8N_API_TOKEN', '')
+
 # WhiteNoise sirve los estáticos; en producción con nombres versionados (cache-busting)
 STORAGES = {
     "default": {
@@ -224,6 +234,17 @@ UNFOLD = {
                     },
                     # Etapas no va aquí: se configura pocas veces y ya está en
                     # "Todas las aplicaciones" (solo superusuario).
+                ],
+            },
+            {
+                'title': 'Contenido',
+                'items': [
+                    {
+                        'title': 'Bitácora',
+                        'icon': 'newspaper',
+                        'link': reverse_lazy('admin:blog_articulo_changelist'),
+                        'permission': 'core.admin_permisos.es_superusuario',
+                    },
                 ],
             },
             # Finanzas se añade en la fase 3, cuando existan sus modelos
