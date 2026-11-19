@@ -64,6 +64,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Después de Authentication: necesita saber si quien entra es del equipo
+    'core.middleware.ModoRemodelacion',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -156,6 +158,10 @@ N8N_API_TOKEN = os.environ.get('N8N_API_TOKEN', '')
 # si n8n llama a la app por una dirección interna (127.0.0.1:8003), los enlaces
 # igual salen con el dominio público. Vacía = se usa la dirección de la petición.
 SITIO_URL = os.environ.get('SITIO_URL', '').rstrip('/')
+
+# 1 = los visitantes solo ven "Estamos en remodelación" (core/middleware.py);
+# el equipo con sesión en el admin ve el sitio completo. 0 = sitio público.
+SITIO_EN_REMODELACION = os.environ.get('SITIO_EN_REMODELACION', '0') == '1'
 
 # WhiteNoise sirve los estáticos; en producción con nombres versionados (cache-busting)
 STORAGES = {

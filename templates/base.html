@@ -19,5 +19,9 @@
     {% block content %}{% endblock %}
     {% include "partials/_footer.html" %}
     {% block extra_js %}{% endblock %}
+    {% if sitio.en_remodelacion and user.is_staff %}
+    {# Solo el equipo llega aquí con el aviso encendido; recuerda que el público no ve esto #}
+    <div class="aviso-equipo" role="status">Modo remodelación activo: solo el equipo ve el sitio</div>
+    {% endif %}
 </body>
 </html>

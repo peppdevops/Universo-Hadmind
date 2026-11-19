@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import reverse
 
 from . import contenido
@@ -18,5 +19,7 @@ def sitio(request):
             'contacto': contenido.CONTACTO,
             'menu': menu,
             'servicios': contenido.SERVICIOS,
+            # Para la franja que avisa al equipo que el sitio está oculto
+            'en_remodelacion': settings.SITIO_EN_REMODELACION,
         },
     }

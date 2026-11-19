@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 
@@ -128,3 +128,40 @@ class UsuarioAdminTests(TestCase):
             self.assertContains(r, f"activeFieldsetTab = '{slugify(pestana)}'")
         # Crear usuario sigue funcionando (usa su propio formulario, sin pestañas).
         self.assertEqual(self.client.get(reverse('admin:auth_user_add')).status_code, 200)
+
+
+@override_settings(SITIO_EN_REMODELACION=True)
+class ModoRemodelacionTests(TestCase):
+    def test_visitante_ve_el_aviso_con_503(self):
+        for ruta in ('/', '/bitacora/', '/cualquier-cosa/'):
+            r = self.client.get(ruta)
+            self.assertEqual(r.status_code, 503, ruta)
+            self.assertContains(r, 'remodelación', status_code=503)
+        self.assertEqual(r['Retry-After'], '86400')
+        # El contacto sale de core/contenido.py
+        self.assertContains(r, 'https://wa.me/', status_code=503)
+        self.assertContains(r, 'hadmind@gmail.com', status_code=503)
+
+    def test_el_equipo_ve_el_sitio_con_la_franja(self):
+        self.client.force_login(User.objects.create_user('ana', password='x', is_staff=True))
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'solo el equipo ve el sitio')
+
+    def test_usuario_sin_ser_del_equipo_ve_el_aviso(self):
+        self.client.force_login(User.objects.create_user('cliente', password='x'))
+        self.assertEqual(self.client.get('/').status_code, 503)
+
+    def test_siguen_funcionando_admin_api_y_salud(self):
+        self.assertEqual(self.client.get(reverse('admin:login')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('salud')).content, b'ok')
+        # La API responde ella misma (401 sin clave), no el aviso
+        self.assertEqual(self.client.post(reverse('blog:api_crear')).status_code, 401)
+        # La revisión del correo responde ella misma (404 por enlace inválido)
+        self.assertEqual(self.client.get('/bitacora/revisar/malo/').status_code, 404)
+
+    @override_settings(SITIO_EN_REMODELACION=False)
+    def test_apagado_todo_normal(self):
+        r = self.client.get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, 'solo el equipo ve el sitio')
