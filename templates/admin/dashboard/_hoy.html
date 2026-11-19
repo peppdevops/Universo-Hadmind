@@ -33,11 +33,6 @@ Bloque: "Hoy". Llamadas de hoy y vencidas. El vendedor ve solo las suyas
                     {% if es_superusuario %}<span class="hd-suave">{{ f.vendedor }}</span>{% endif %}
                 </div>
                 <div class="hd-agenda__botones">
-                    {% if f.whatsapp %}
-                        <a class="hd-boton-icono" href="{{ f.whatsapp }}" target="_blank" rel="noopener" title="Abrir WhatsApp">
-                            <span class="material-symbols-outlined">chat</span>
-                        </a>
-                    {% endif %}
                     {% include "unfold/components/button.html" with href=f.registrar variant="default" size="sm" icon="edit" children="Registrar llamada" %}
                 </div>
             </li>

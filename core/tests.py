@@ -25,7 +25,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.crm.models import GRUPO_VENDEDOR, Contacto, Etapa, Interaccion
-from core.utils import pesos, telefono_legible, url_whatsapp
+from core.utils import pesos, telefono_legible
 
 User = get_user_model()
 
@@ -96,22 +96,14 @@ class DashboardTests(TestCase):
         fila = r.context['llamadas']['filas'][0]
         self.assertEqual((fila['nombre'], fila['total'], fila['contestaron'], fila['interesados']), ('Ana Ruiz', 3, 2, 1))
 
-    def test_whatsapp_solo_para_celulares(self):
-        r = self.inicio(self.ana)
-        filas = {f['empresa']: f for f in r.context['agenda']['filas']}
-        self.assertEqual(filas['Vencida de Ana']['whatsapp'], 'https://wa.me/573001111111')
-        self.assertEqual(filas['Hoy de Ana']['whatsapp'], '')   # fijo de Medellín
+    def test_inicio_sin_whatsapp(self):
+        self.assertNotContains(self.inicio(self.ana), 'wa.me')
 
 
 class UtilidadesFormatoTests(TestCase):
     def test_telefono_legible(self):
         self.assertEqual(telefono_legible('+573105550142'), '310 555 0142')
         self.assertEqual(telefono_legible('+14155550100'), '+14155550100')
-
-    def test_url_whatsapp(self):
-        self.assertEqual(url_whatsapp('+573105550142'), 'https://wa.me/573105550142')
-        self.assertEqual(url_whatsapp('+576045550110'), '')
-        self.assertEqual(url_whatsapp(''), '')
 
     def test_pesos(self):
         self.assertEqual(pesos(1250000), '$1.250.000')

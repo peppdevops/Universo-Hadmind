@@ -314,7 +314,7 @@ class ListasYDetalleTests(TestCase):
         self.assertContains(r, 'Vencida ·')             # próxima llamada vencida
         self.assertContains(r, 'No contestó')           # resultado de la última llamada
         self.assertContains(r, 'Ana R.')                # vendedor
-        self.assertContains(r, 'https://wa.me/573105550142')
+        self.assertNotContains(r, 'wa.me')                # el CRM no tiene WhatsApp
         self.assertContains(r, '1 empresa · 0 llamadas para hoy')
 
     def test_vendedor_no_ve_columna_vendedor(self):
@@ -331,12 +331,13 @@ class ListasYDetalleTests(TestCase):
         self.empresa.refresh_from_db()
         self.assertEqual(self.empresa.etapa, contactado)
 
-    def test_detalle_muestra_resumen_con_whatsapp(self):
+    def test_detalle_muestra_resumen_sin_whatsapp(self):
         self.client.force_login(self.ana)
         r = self.client.get(reverse('admin:crm_empresaporllamar_change', args=[self.empresa.pk]))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'hd-resumen')
         self.assertContains(r, 'tel:+573105550142')
+        self.assertNotContains(r, 'wa.me')
 
     def test_menu_dice_empresas(self):
         r = self.lista(self.admin)

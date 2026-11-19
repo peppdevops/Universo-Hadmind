@@ -22,9 +22,6 @@ Al crear una empresa nueva no hay resumen y no se muestra nada.
         </div>
     </div>
     <div class="hd-resumen__botones">
-        {% if resumen.whatsapp %}
-            {% include "unfold/components/button.html" with href=resumen.whatsapp variant="default" icon="chat" children="WhatsApp" attrs=resumen.nueva_pestana %}
-        {% endif %}
         {% if resumen.tel %}
             {# tel: abre el marcador del celular para llamar directamente #}
             {% with "tel:"|add:resumen.tel as enlace_tel %}

@@ -8,7 +8,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 
-from core.utils import TelefonoInvalido, normalizar_telefono, telefono_legible, url_whatsapp
+from core.utils import TelefonoInvalido, normalizar_telefono, telefono_legible
 
 from . import formato
 from .forms import ImportarCSVForm
@@ -151,9 +151,6 @@ class ContactoAdminBase(ModelAdmin):
                     'proxima_texto': texto,
                     'telefono': telefono_legible(obj.telefono),
                     'tel': obj.telefono,
-                    'whatsapp': url_whatsapp(obj.telefono),
-                    # WhatsApp se abre en otra pestaña para no perder el formulario.
-                    'nueva_pestana': {'target': '_blank', 'rel': 'noopener'},
                 },
             }
         return super().change_view(request, object_id, form_url, extra_context)
@@ -224,18 +221,13 @@ class ContactoAdminBase(ModelAdmin):
 
     @display(description='')
     def col_acciones(self, obj):
-        # Botones de la fila: WhatsApp (solo celulares) y registrar llamada,
-        # que abre la empresa directamente en la pestaña Llamadas.
+        # Botón de la fila: registrar llamada, que abre la empresa directamente
+        # en la pestaña Llamadas. Sin WhatsApp: el CRM es para llamar.
         cambiar = reverse(f'admin:{self.opts.app_label}_{self.opts.model_name}_change', args=[obj.pk])
-        whatsapp = url_whatsapp(obj.telefono)
-        boton_whatsapp = format_html(
-            '<a class="hd-boton-icono" href="{}" target="_blank" rel="noopener" title="Abrir WhatsApp">'
-            '<span class="material-symbols-outlined">chat</span></a>', whatsapp,
-        ) if whatsapp else ''
         return format_html(
-            '<span class="hd-acciones">{}<a class="hd-boton-icono" href="{}#llamadas" title="Registrar llamada">'
+            '<span class="hd-acciones"><a class="hd-boton-icono" href="{}#llamadas" title="Registrar llamada">'
             '<span class="material-symbols-outlined">edit_note</span></a></span>',
-            boton_whatsapp, cambiar,
+            cambiar,
         )
 
     def get_search_results(self, request, queryset, search_term):

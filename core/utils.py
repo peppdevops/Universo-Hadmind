@@ -65,19 +65,6 @@ def telefono_legible(telefono):
     return telefono
 
 
-def url_whatsapp(telefono):
-    """Enlace wa.me para abrir el chat, o '' si el número no puede tener WhatsApp.
-
-    En Colombia los celulares empiezan por 3; los fijos (601, 604...) no tienen
-    WhatsApp y wa.me daría error, así que no se ofrece el botón.
-    """
-    if not telefono:
-        return ''
-    if telefono.startswith('+57') and not telefono.startswith('+573'):
-        return ''
-    return f'https://wa.me/{telefono.lstrip("+")}'
-
-
 def pesos(valor):
     """1250000 -> "$1.250.000" (pesos colombianos, sin decimales, punto de miles)."""
     return '$' + f'{valor:,}'.replace(',', '.')

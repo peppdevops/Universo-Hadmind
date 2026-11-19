@@ -429,24 +429,69 @@
 .hd-tabla .hd-derecha { text-align: right; }
 
 /* -------------------------------------------------------------------------
- * Arreglo de unfold 0.110.1: a 1280 px EXACTOS el menú lateral no abría.
- * Su JavaScript trata 1280 px como pantalla pequeña (menú flotante) y su CSS
- * (clase xl:relative) como grande (menú que empuja el contenido). Al abrirse,
- * el menú empujaba la página, ese cambio de tamaño hacía que el JavaScript lo
- * volviera a cerrar. 1280 px es muy común (pantalla Full HD con escala 150 %).
- * Aquí, solo en ese ancho exacto, el menú flota como en pantallas pequeñas.
+ * Menú lateral: en un computador NUNCA tapa el contenido.
+ * unfold 0.110.1, con 1280 px o menos, abre el menú flotando ENCIMA de la
+ * página (position: fixed) y lo deja AL LADO (xl:relative) solo desde 1280.
+ * En portátiles comunes (1536 px con escala 125 % = 1229 px; Full HD al 150 %
+ * = 1280 px) eso tapa la tabla. Desde 1024 px el menú va al lado y empuja el
+ * contenido; su JavaScript lo sigue abriendo cerrado en estas pantallas, para
+ * dar todo el espacio a la tabla, y se abre con el botón de arriba a la
+ * izquierda. Por debajo de 1024 (un iPad en vertical) sigue flotando: si
+ * empujara, la tabla quedaría de 480 px.
  * ------------------------------------------------------------------------- */
-@media (min-width: 1280px) and (max-width: 1280.98px) {
+@media (min-width: 1024px) and (max-width: 1280.98px) {
     .xl\:relative:has(> div > #nav-sidebar) {
-        position: fixed;
+        position: relative;
     }
+}
 
+/* Menú que se desliza (templates/admin/nav_sidebar.html). Cerrado, la columna
+ * mide 0 px y el menú se corre a su izquierda; al abrir, la columna crece y
+ * empuja el contenido al mismo ritmo que el menú entra. "visibility" lo oculta
+ * del todo cuando terminó de salir (para que no se asome en ningún borde). */
+.hd-menu--cerrado #nav-sidebar {
+    transform: translateX(-100%);
+    visibility: hidden;
+}
+
+.hd-menu-animado .hd-menu {
+    transition: width 0.25s ease;
+}
+
+.hd-menu-animado .hd-menu #nav-sidebar {
+    transition: transform 0.25s ease, visibility 0s linear 0s;
+}
+
+/* Al cerrar, se oculta cuando termina de deslizarse (no antes) */
+.hd-menu-animado .hd-menu--cerrado #nav-sidebar {
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hd-menu-animado .hd-menu,
+    .hd-menu-animado .hd-menu #nav-sidebar,
+    .hd-menu-animado .hd-menu--cerrado #nav-sidebar {
+        transition: none;
+    }
+}
+
+/* El contenido usa todo el ancho hasta 1536 px. unfold lo limita con
+ * "container" (1024 px de ancho entre 1024 y 1279 px de ventana, 1280 entre
+ * 1280 y 1535): en esas pantallas dejaba franjas vacías a los lados y la
+ * tabla de empresas no cabía. Desde 1536 se mantiene su límite. Además, si el
+ * contenido se volviera más ancho que la ventana, el navegador avisaría de un
+ * cambio de tamaño y el JavaScript de unfold cerraría el menú. */
+@media (max-width: 1535.98px) {
+    #content.container {
+        max-width: 100%;
+    }
 }
 
 /* La X para cerrar el menú, que unfold oculta desde 1280 px con
  * "display: none !important" dentro de una capa (@layer) de su CSS. Una regla
  * normal no le gana; una !important en una capa declarada ANTES sí, y este
- * archivo se carga antes que el de unfold. */
+ * archivo se carga antes que el de unfold. A 1280 exactos el JavaScript trata
+ * la pantalla como pequeña: sin la X no habría cómo cerrarlo. */
 @layer hd-arreglos {
     @media (min-width: 1280px) and (max-width: 1280.98px) {
         #nav-sidebar .xl\:hidden\! {

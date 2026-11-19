@@ -213,6 +213,10 @@ UNFOLD = {
         # lambda: static() necesita que Django esté cargado; así se llama al usarse.
         lambda request: static('hadmind_admin/admin.css'),
     ],
+    # Arreglo del menú lateral: que no se cierre solo al abrirlo (ver el archivo)
+    'SCRIPTS': [
+        lambda request: static('hadmind_admin/menu.js'),
+    ],
     'COLORS': {
         # Escala del azul HADMIND (#3E83D6 = 600, el tono de botones y enlaces).
         # unfold necesita los 11 tonos: claros para fondos, oscuros para texto.

@@ -18,7 +18,7 @@ from django.utils import timezone
 from apps.crm import formato
 from apps.crm.services import agenda_hoy, embudo, inicio_de_semana, llamadas_de_la_semana
 from core import dashboard_ejemplo
-from core.utils import telefono_legible, url_whatsapp
+from core.utils import telefono_legible
 
 DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 MESES_LARGOS = [
@@ -68,7 +68,6 @@ def fila_agenda(contacto):
         'etapa': str(contacto.etapa or 'Sin etapa'),
         'color_etapa': formato.color_etapa(contacto.etapa),
         'vendedor': formato.nombre_corto(contacto.asignado_a) or 'Sin asignar',
-        'whatsapp': url_whatsapp(contacto.telefono),
         'registrar': url_registrar_llamada(contacto),
     }
 
