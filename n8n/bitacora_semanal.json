@@ -1,0 +1,522 @@
+{
+  "name": "Bitácora semanal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 7,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "bf6bb87a-e86b-512e-9f6b-43f457883a80",
+      "name": "Lunes 7:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== CONFIGURACIÓN DEL FLUJO =====\n// Lo único que normalmente se cambia. Los demás nodos leen estos valores.\nreturn [{\n  json: {\n    // Dónde está la app. Prueba en tu PC: http://host.docker.internal:8000\n    // En el VPS: https://hadmind.com.co\n    url_app: 'http://host.docker.internal:8000',\n    correo: 'hadmind@gmail.com',\n    // Modelos de OpenAI (cámbialos si tu cuenta usa otros)\n    modelo_texto: 'gpt-5-mini',\n    modelo_imagen: 'gpt-image-1',\n    calidad_imagen: 'medium',          // low | medium | high (más alta = más cara)\n    dias: 8,                           // antigüedad máxima de las noticias\n    feeds: [\n      'https://www.xataka.com/feedburner.xml',\n      'https://hipertextual.com/feed',\n      'https://wwwhatsnew.com/feed/',\n      'https://www.enter.co/feed/',\n      'https://impactotic.co/feed/',\n      'https://www.portafolio.co/rss/tecnologia.xml',\n    ],\n    // Nombre bonito del medio para \"Fuente:\" (por dominio)\n    medios: {\n      'xataka.com': 'Xataka',\n      'hipertextual.com': 'Hipertextual',\n      'wwwhatsnew.com': \"WWWhat's new\",\n      'enter.co': 'ENTER.CO',\n      'impactotic.co': 'Impacto TIC',\n      'portafolio.co': 'Portafolio',\n    },\n    // Parte FIJA del prompt de imagen: el estilo HADMIND. La IA solo añade la escena.\n    estilo_imagen:\n      'Editorial illustration for a technology blog aimed at small businesses. ' +\n      'Clean, modern, minimal style mixing soft 3D and flat shapes, soft lighting, generous negative space. ' +\n      'Brand palette: blue #3E83D6, darker blue #2F6DB8, deep navy #020617, white and light blue #EEF4FC accents. ' +\n      'No text, no letters, no numbers, no logos, no brand names, no watermarks, no recognizable real people. ' +\n      'Horizontal composition with the subject centered so it can be cropped to 16:10.',\n  },\n}];\n"
+      },
+      "id": "05385b07-567a-5fdf-9e0a-d305e4a4d4b3",
+      "name": "Configuración",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Configuración').first().json.url_app }}/api/bitacora/fuentes/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "0d6a063a-09de-5572-8035-e512e188c83e",
+      "name": "Fuentes usadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un elemento por feed: el nodo siguiente lee cada uno.\nreturn $('Configuración').first().json.feeds.map((url) => ({ json: { url } }));\n"
+      },
+      "id": "2c0afe6f-cd07-56b2-9ff5-05b1d88e9256",
+      "name": "Lista de feeds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; HadmindBitacora/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "7d55c924-d775-5a64-88e4-4db086156eee",
+      "name": "Descargar feeds",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee el XML de cada feed, junta las noticias, quita las viejas y las ya\n// usadas (también las descartadas) y prepara la pregunta para que la IA elija.\nconst cfg = $('Configuración').first().json;\n\nconst entidades = { '&nbsp;': ' ', '&amp;': '&', '&quot;': '\"', '&apos;': \"'\", '&lt;': '<', '&gt;': '>',\n  '&rsquo;': '’', '&lsquo;': '‘', '&ldquo;': '“', '&rdquo;': '”', '&ndash;': '–', '&mdash;': '—', '&hellip;': '…' };\nconst decodificar = (t) => t\n  .replace(/&#(\\d+);/g, (_, n) => String.fromCharCode(Number(n)))\n  .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))\n  .replace(/&[a-z]+;/gi, (e) => entidades[e] || e);\n// Quita CDATA y etiquetas HTML (la descripción a veces trae HTML escapado)\nconst limpiar = (t) => decodificar(decodificar(t.replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1'))\n  .replace(/<[^>]+>/g, ' ')).replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();\nconst etiqueta = (xml, nombre) => {\n  const m = xml.match(new RegExp('<' + nombre + '(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)</' + nombre + '>', 'i'));\n  return m ? limpiar(m[1]) : '';\n};\n\n// Sin new URL(): el código de n8n corre aislado y ahí URL no existe.\n// Misma noticia aunque traiga ?utm=... o #seccion\nconst normalizar = (url) => String(url || '').trim().split('#')[0].split('?')[0].replace(/\\/$/, '').toLowerCase();\n\nfunction medio(url) {\n  const m = String(url || '').match(/^https?:\\/\\/(?:www\\.)?([^\\/:?#]+)/i);\n  const dominio = m ? m[1].toLowerCase() : '';\n  return cfg.medios[dominio] || dominio;\n}\n\nconst usadas = new Set(($('Fuentes usadas').first().json.fuentes || []).map(normalizar));\nconst limite = Date.now() - cfg.dias * 24 * 60 * 60 * 1000;\nconst vistas = new Set();\nconst candidatas = [];\n\nconst noticias = [];\nfor (const feed of $input.all()) {\n  const xml = typeof feed.json.data === 'string' ? feed.json.data : '';\n  // Un feed caído llega sin \"data\" y se salta: no detiene el flujo\n  for (const bloque of xml.match(/<item[\\s>][\\s\\S]*?<\\/item>/gi) || []) {\n    noticias.push({\n      titulo: etiqueta(bloque, 'title'),\n      link: etiqueta(bloque, 'link'),\n      fecha: new Date(etiqueta(bloque, 'pubDate') || etiqueta(bloque, 'dc:date') || 0).getTime(),\n      resumen: etiqueta(bloque, 'description').slice(0, 300),\n    });\n  }\n}\n\nfor (const n of noticias) {\n  if (!n.link || !n.titulo || !n.fecha || n.fecha < limite) continue;\n  const clave = normalizar(n.link);\n  if (usadas.has(clave) || vistas.has(clave)) continue;\n  vistas.add(clave);\n  candidatas.push({ titulo: n.titulo, url: n.link, medio: medio(n.link), fecha: n.fecha, resumen: n.resumen });\n}\n\n// Máximo 8 por medio: Xataka publica muchísimo y taparía a los demás\ncandidatas.sort((a, b) => b.fecha - a.fecha);\nconst porMedio = {};\nconst lista = candidatas.filter((c) => (porMedio[c.medio] = (porMedio[c.medio] || 0) + 1) <= 8).slice(0, 48);\nif (!lista.length) {\n  throw new Error('No hay noticias nuevas en los RSS de los últimos ' + cfg.dias + ' días.');\n}\n\nconst sistema = [\n  'Eres el editor de \"La Bitácora\", el blog de HADMIND, una empresa colombiana de software, inteligencia artificial y automatización para pymes.',\n  'De la lista de noticias, elige UNA: la más útil para dueños de pequeñas y medianas empresas en Latinoamérica sobre cómo avanzan la tecnología, las apps, la IA, la automatización y el software para negocios.',\n  'Prefiere: herramientas que una pyme puede usar, tendencias de adopción, cambios en plataformas que usan las empresas (WhatsApp, Google, pagos, facturación), startups y casos de negocio.',\n  'Evita: rumores, lanzamientos de celulares o gadgets de consumo, videojuegos, entretenimiento, política, crimen, ofertas y noticias solo de grandes corporaciones sin utilidad para una pyme.',\n].join('\\n');\n\nreturn [{\n  json: {\n    candidatas: lista,\n    cuerpo: {\n      model: cfg.modelo_texto,\n      messages: [\n        { role: 'system', content: sistema },\n        { role: 'user', content: 'Noticias (indice: titulo | medio | resumen):\\n' +\n          lista.map((c, i) => `${i}: ${c.titulo} | ${c.medio} | ${c.resumen}`).join('\\n') },\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'eleccion',\n          strict: true,\n          schema: {\n            type: 'object',\n            properties: {\n              indice: { type: 'integer', description: 'Índice de la noticia elegida' },\n              motivo: { type: 'string', description: 'Por qué es útil para una pyme, en una frase' },\n            },\n            required: ['indice', 'motivo'],\n            additionalProperties: false,\n          },\n        },\n      },\n    },\n  },\n}];\n"
+      },
+      "id": "13d95054-88f2-59dd-a45f-52cf72f21fe4",
+      "name": "Elegir candidatas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.cuerpo) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "7cc17df6-05b1-513f-aad5-306e07f7f691",
+      "name": "Elegir noticia (IA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// La IA devuelve un índice; la URL y el medio salen de la lista, no de la IA\n// (así no puede inventar un enlace).\nconst { candidatas } = $('Elegir candidatas').first().json;\nconst respuesta = JSON.parse($json.choices[0].message.content);\nconst elegida = candidatas[respuesta.indice];\nif (!elegida) throw new Error('La IA eligió un índice que no existe: ' + respuesta.indice);\nreturn [{ json: { elegida, motivo: respuesta.motivo } }];\n"
+      },
+      "id": "b3eae29f-6274-533a-a7cf-77047cb97d20",
+      "name": "Leer elección",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.elegida.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; HadmindBitacora/1.0)"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "70d70b3c-9f58-5d8f-b010-30e287bdf5d0",
+      "name": "Descargar noticia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        300
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Saca el texto de la página de la noticia (los párrafos <p>) para que la IA\n// escriba con datos reales y no solo con el resumen corto del RSS.\nconst cfg = $('Configuración').first().json;\nconst { elegida } = $('Leer elección').first().json;\n\nconst entidades = { '&nbsp;': ' ', '&amp;': '&', '&quot;': '\"', '&#039;': \"'\", '&apos;': \"'\",\n  '&lt;': '<', '&gt;': '>', '&rsquo;': '’', '&lsquo;': '‘', '&ldquo;': '“', '&rdquo;': '”',\n  '&ndash;': '–', '&mdash;': '—', '&hellip;': '…' };\nconst decodificar = (t) => t\n  .replace(/&#(\\d+);/g, (_, n) => String.fromCharCode(Number(n)))\n  .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))\n  .replace(/&[a-z]+;|&#0?39;/gi, (e) => entidades[e] || e);\n\nconst html = String($json.data || '')\n  .replace(/<(script|style|noscript|nav|header|footer|aside|form|figure)[\\s\\S]*?<\\/\\1>/gi, ' ');\nconst parrafos = [...html.matchAll(/<p[^>]*>([\\s\\S]*?)<\\/p>/gi)]\n  .map((m) => decodificar(m[1].replace(/<[^>]+>/g, '')).replace(/\\s+/g, ' ').trim())\n  .filter((t) => t.length > 60);\n\nlet texto = parrafos.join('\\n\\n').slice(0, 9000);\n// Si la página no se pudo leer (bloqueo, error), se usa el resumen del RSS\nif (texto.length < 400) texto = elegida.resumen;\n\nconst categorias = ['inteligencia_artificial', 'automatizacion', 'software', 'startups', 'pymes'];\nconst sistema = [\n  'Eres el editor de \"La Bitácora\", el blog de HADMIND (software, IA y automatización para pymes en Colombia y Latinoamérica).',\n  'Escribe un artículo ORIGINAL en español neutro (Colombia) a partir de la noticia. No copies frases de la fuente: explícala con tus palabras.',\n  'Público: dueños y gerentes de pymes, sin conocimientos técnicos. Tono claro, cercano y práctico, sin exagerar.',\n  'Formato del contenido en Markdown, 350 a 550 palabras:',\n  '- Un párrafo de entrada (sin título).',\n  '- \"## Qué pasó\": los hechos de la noticia.',\n  '- \"## Por qué importa para las pymes\".',\n  '- \"## Qué puedes hacer\": 3 o 4 viñetas concretas.',\n  'Reglas: NO inventes cifras, fechas, nombres ni citas que no estén en el texto. Si un dato no está, no lo pongas.',\n  'No pongas el título dentro del contenido, ni enlaces, ni emojis. No menciones a HADMIND ni hagas publicidad.',\n  'titulo: máximo 90 caracteres, claro, sin clickbait, sin comillas.',\n  'resumen: 1 o 2 frases, máximo 260 caracteres.',\n  'categoria: una de ' + categorias.join(', ') + '.',\n  'imagen_alt: describe la imagen en español, máximo 120 caracteres.',\n  'prompt_imagen: en inglés, describe SOLO la escena de una ilustración que represente el tema con objetos concretos ' +\n    '(sin estilo ni colores, eso se añade aparte). Sin texto, sin logos, sin marcas, sin personas reales.',\n].join('\\n');\n\nreturn [{\n  json: {\n    elegida,\n    cuerpo: {\n      model: cfg.modelo_texto,\n      messages: [\n        { role: 'system', content: sistema },\n        { role: 'user', content: `Noticia: ${elegida.titulo}\\nMedio: ${elegida.medio}\\n\\nTexto:\\n${texto}` },\n      ],\n      response_format: {\n        type: 'json_schema',\n        json_schema: {\n          name: 'articulo',\n          strict: true,\n          schema: {\n            type: 'object',\n            properties: {\n              titulo: { type: 'string' },\n              categoria: { type: 'string', enum: categorias },\n              resumen: { type: 'string' },\n              contenido: { type: 'string' },\n              imagen_alt: { type: 'string' },\n              prompt_imagen: { type: 'string' },\n            },\n            required: ['titulo', 'categoria', 'resumen', 'contenido', 'imagen_alt', 'prompt_imagen'],\n            additionalProperties: false,\n          },\n        },\n      },\n    },\n  },\n}];\n"
+      },
+      "id": "19ca951d-35d9-5989-9e31-3bd8fd953094",
+      "name": "Extraer texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.cuerpo) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "940913ae-fe91-56aa-8618-65231b161492",
+      "name": "Escribir artículo (IA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Junta el artículo de la IA con la fuente y prepara el pedido de la imagen:\n// estilo HADMIND fijo + la escena que propuso la IA.\nconst cfg = $('Configuración').first().json;\nconst { elegida } = $('Extraer texto').first().json;\nconst a = JSON.parse($json.choices[0].message.content);\nconst prompt = cfg.estilo_imagen + '\\n\\nScene: ' + a.prompt_imagen;\n\nreturn [{\n  json: {\n    articulo: {\n      titulo: a.titulo.slice(0, 200),\n      categoria: a.categoria,\n      resumen: a.resumen.slice(0, 400),\n      contenido: a.contenido,\n      imagen_alt: a.imagen_alt.slice(0, 200),\n      prompt_imagen: prompt,\n      fuente_nombre: elegida.medio,\n      fuente_url: elegida.url,\n    },\n    pedido_imagen: {\n      model: cfg.modelo_imagen,\n      prompt,\n      size: '1536x1024',\n      quality: cfg.calidad_imagen,\n      output_format: 'jpeg',\n      n: 1,\n    },\n  },\n}];\n"
+      },
+      "id": "4ec6eb12-9f51-5b09-bebc-d7a1bda0eaa9",
+      "name": "Leer artículo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.pedido_imagen) }}",
+        "options": {
+          "timeout": 240000
+        }
+      },
+      "id": "ad899754-eeab-57dd-ad7d-b28035269bdf",
+      "name": "Generar imagen (IA)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// OpenAI devuelve la imagen en base64: se convierte en archivo para enviarla.\nconst { articulo } = $('Leer artículo').first().json;\nconst base64 = $json.data[0].b64_json;\n// Formato de archivo de n8n: los datos en base64 + tipo y nombre\nconst archivo = { data: base64, mimeType: 'image/jpeg', fileName: 'imagen.jpg', fileExtension: 'jpg' };\nreturn [{ json: articulo, binary: { imagen: archivo } }];\n"
+      },
+      "id": "8a8f6040-be31-542f-acf6-5b3323cc8d01",
+      "name": "Imagen a archivo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuración').first().json.url_app }}/api/bitacora/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "titulo",
+              "value": "={{ $json.titulo }}"
+            },
+            {
+              "name": "categoria",
+              "value": "={{ $json.categoria }}"
+            },
+            {
+              "name": "resumen",
+              "value": "={{ $json.resumen }}"
+            },
+            {
+              "name": "contenido",
+              "value": "={{ $json.contenido }}"
+            },
+            {
+              "name": "imagen_alt",
+              "value": "={{ $json.imagen_alt }}"
+            },
+            {
+              "name": "prompt_imagen",
+              "value": "={{ $json.prompt_imagen }}"
+            },
+            {
+              "name": "fuente_nombre",
+              "value": "={{ $json.fuente_nombre }}"
+            },
+            {
+              "name": "fuente_url",
+              "value": "={{ $json.fuente_url }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "imagen",
+              "inputDataFieldName": "imagen"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "4e752711-4401-5d82-8c3c-4140f79e32b7",
+      "name": "Enviar a la app",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "=HADMIND Bitácora <{{ $('Configuración').first().json.correo }}>",
+        "toEmail": "={{ $('Configuración').first().json.correo }}",
+        "subject": "={{ $json.correo_asunto }}",
+        "emailFormat": "html",
+        "html": "={{ $json.correo_html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "6a90b32e-421e-5663-98a8-da3add7e87eb",
+      "name": "Correo de aprobación",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        3300,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Lunes 7:00": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Fuentes usadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fuentes usadas": {
+      "main": [
+        [
+          {
+            "node": "Lista de feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista de feeds": {
+      "main": [
+        [
+          {
+            "node": "Descargar feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar feeds": {
+      "main": [
+        [
+          {
+            "node": "Elegir candidatas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elegir candidatas": {
+      "main": [
+        [
+          {
+            "node": "Elegir noticia (IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elegir noticia (IA)": {
+      "main": [
+        [
+          {
+            "node": "Leer elección",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer elección": {
+      "main": [
+        [
+          {
+            "node": "Descargar noticia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar noticia": {
+      "main": [
+        [
+          {
+            "node": "Extraer texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer texto": {
+      "main": [
+        [
+          {
+            "node": "Escribir artículo (IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escribir artículo (IA)": {
+      "main": [
+        [
+          {
+            "node": "Leer artículo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer artículo": {
+      "main": [
+        [
+          {
+            "node": "Generar imagen (IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar imagen (IA)": {
+      "main": [
+        [
+          {
+            "node": "Imagen a archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Imagen a archivo": {
+      "main": [
+        [
+          {
+            "node": "Enviar a la app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar a la app": {
+      "main": [
+        [
+          {
+            "node": "Correo de aprobación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  },
+  "pinData": {}
+}

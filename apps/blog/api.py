@@ -7,11 +7,14 @@ Campos: titulo, categoria, resumen, contenido (Markdown), imagen_alt,
         prompt_imagen, fuente_nombre, fuente_url.
 
 Respuestas:
-201 creado como BORRADOR -> {"id", "titulo", "url_revision", ...}
-    n8n pone url_revision en el correo de aprobación.
+201 creado como BORRADOR -> {"id", "titulo", "url_revision", "correo_asunto",
+    "correo_html", ...}. n8n envía correo_asunto/correo_html tal cual.
 400 datos inválidos -> {"errores": {"campo": ["mensaje"]}}
 401 clave mala o ausente
 409 esa fuente ya existe -> {"error", "id"} (n8n puede ignorarlo)
+
+GET /api/bitacora/fuentes/ (misma cabecera)
+200 -> {"fuentes": [url, ...]}: fuentes ya usadas, para que n8n no las repita.
 """
 
 import hmac
@@ -22,11 +25,13 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from .forms import ArticuloN8NForm
 from .models import Articulo
-from .services import normalizar_categoria, slug_unico, url_revision
+from .services import (
+    correo_revision, fuentes_usadas, normalizar_categoria, slug_unico, url_absoluta, url_revision,
+)
 
 
 def clave_valida(request):
@@ -81,11 +86,21 @@ def crear_articulo(request):
         # Dos envíos de la misma noticia al mismo tiempo: el segundo choca aquí.
         return respuesta_duplicado(Articulo.objects.get(fuente_url=fuente))
 
+    asunto, html = correo_revision(request, articulo)
     return JsonResponse({
         'id': articulo.pk,
         'titulo': articulo.titulo,
         'estado': articulo.estado,
-        'url_revision': request.build_absolute_uri(url_revision(articulo)),
-        'url_admin': request.build_absolute_uri(reverse('admin:blog_articulo_change', args=[articulo.pk])),
-        'imagen': request.build_absolute_uri(articulo.imagen.url) if articulo.imagen else '',
+        'url_revision': url_absoluta(request, url_revision(articulo)),
+        'url_admin': url_absoluta(request, reverse('admin:blog_articulo_change', args=[articulo.pk])),
+        'imagen': url_absoluta(request, articulo.imagen.url) if articulo.imagen else '',
+        'correo_asunto': asunto,
+        'correo_html': html,
     }, status=201)
+
+
+@require_GET
+def fuentes(request):
+    if not clave_valida(request):
+        return JsonResponse({'error': 'Clave inválida.'}, status=401)
+    return JsonResponse({'fuentes': fuentes_usadas()})

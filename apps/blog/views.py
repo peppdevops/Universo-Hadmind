@@ -70,6 +70,6 @@ def detalle(request, slug):
         'articulo': articulo,
         'relacionados': services.relacionados(articulo),
         # WhatsApp, LinkedIn y Google necesitan direcciones completas (https://...).
-        'url_absoluta': request.build_absolute_uri(),
-        'imagen_absoluta': request.build_absolute_uri(articulo.imagen.url) if articulo.imagen else '',
+        'url_absoluta': services.url_absoluta(request, request.path),
+        'imagen_absoluta': services.url_absoluta(request, articulo.imagen.url) if articulo.imagen else '',
     })

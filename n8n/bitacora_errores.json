@@ -1,0 +1,54 @@
+{
+  "name": "Bitácora: aviso de errores",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1d0d0520-4d3a-5be0-8d87-e29b0474578a",
+      "name": "Si falla un flujo",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "HADMIND n8n <hadmind@gmail.com>",
+        "toEmail": "hadmind@gmail.com",
+        "subject": "=Falló el flujo «{{ $json.workflow.name }}»",
+        "emailFormat": "html",
+        "html": "=<p>El flujo <b>{{ $json.workflow.name }}</b> falló en el paso <b>{{ $json.execution.lastNodeExecuted }}</b>.</p><p>Error: {{ $json.execution.error.message }}</p><p><a href=\"{{ $json.execution.url }}\">Ver la ejecución en n8n</a></p><p>Si dice \"No hay noticias nuevas\", no es grave: esta semana no hubo noticias que no se hayan usado.</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "03a91fac-6ad4-5f27-8a74-3a1e6f578014",
+      "name": "Avisar por correo",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Si falla un flujo": {
+      "main": [
+        [
+          {
+            "node": "Avisar por correo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  },
+  "pinData": {}
+}

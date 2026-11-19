@@ -6,8 +6,10 @@ from io import BytesIO
 
 import markdown
 import nh3
+from django.conf import settings
 from django.core import signing
 from django.core.files.base import ContentFile
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -112,6 +114,42 @@ def articulo_de_token(token):
 
 def url_revision(articulo):
     return reverse('blog:revisar', args=[token_revision(articulo)])
+
+
+def url_absoluta(request, ruta):
+    """Ruta -> dirección completa (https://...) para correos y redes sociales.
+
+    Con SITIO_URL se usa el dominio público aunque la petición llegue por una
+    dirección interna; sin ella, la de la petición (desarrollo y tests).
+    """
+    if settings.SITIO_URL:
+        return settings.SITIO_URL + ruta
+    return request.build_absolute_uri(ruta)
+
+
+FUENTES_RECIENTES = 200
+
+
+def fuentes_usadas():
+    """Fuentes de los últimos artículos, también borradores y descartados, para
+    que n8n no gaste OpenAI escribiendo una noticia que ya se usó o se rechazó."""
+    return list(
+        Articulo.objects.exclude(fuente_url='').order_by('-creado')
+        .values_list('fuente_url', flat=True)[:FUENTES_RECIENTES]
+    )
+
+
+def correo_revision(request, articulo):
+    """Asunto y HTML del correo de aprobación. El diseño vive aquí y no en
+    n8n para que esté versionado con el resto del sitio; n8n solo lo envía."""
+    revisar = url_absoluta(request, url_revision(articulo))
+    html = render_to_string('blog/correo_revision.html', {
+        'articulo': articulo,
+        'url_revision': revisar,
+        'url_imagen': url_absoluta(request, articulo.imagen.url) if articulo.imagen else '',
+        'dias_vigencia': VIGENCIA_REVISION // (60 * 60 * 24),
+    })
+    return f'Bitácora: revisa «{articulo.titulo}»', html
 
 
 # --- Cambios de estado ---------------------------------------------------

@@ -131,6 +131,28 @@ class ApiN8NTests(ConCarpetaTemporal):
         r = self.enviar('{no es json', content_type='application/json')
         self.assertEqual(r.status_code, 400)
 
+    def test_respuesta_trae_el_correo_listo(self):
+        r = self.enviar({**datos_validos(), 'imagen': imagen_de_prueba()}).json()
+        self.assertIn('Las pymes ya automatizan', r['correo_asunto'])
+        self.assertIn(r['url_revision'], r['correo_html'])
+        self.assertIn('Revisar y publicar', r['correo_html'])
+        self.assertIn('/media/bitacora/', r['correo_html'])  # la imagen, con dirección completa
+
+    @override_settings(SITIO_URL='https://hadmind.com.co')
+    def test_enlaces_con_el_dominio_publico(self):
+        # n8n puede llamar por una dirección interna; el enlace del correo no.
+        r = self.enviar(datos_validos(), SERVER_NAME='127.0.0.1').json()
+        self.assertTrue(r['url_revision'].startswith('https://hadmind.com.co/bitacora/revisar/'))
+        self.assertNotIn('127.0.0.1', r['correo_html'])
+
+    def test_fuentes_usadas(self):
+        url = reverse('blog:api_fuentes')
+        self.assertEqual(self.client.get(url).status_code, 401)
+        crear_articulo(estado=Articulo.Estado.DESCARTADO)
+        r = self.client.get(url, HTTP_AUTHORIZATION=f'Bearer {CLAVE}')
+        # Las descartadas también cuentan: no se vuelven a proponer.
+        self.assertEqual(r.json(), {'fuentes': ['https://ejemplo.com/noticia-1']})
+
 
 class ContenidoTests(TestCase):
     def test_markdown_se_convierte_y_se_limpia(self):
@@ -287,6 +309,7 @@ class PaginasPublicasTests(TestCase):
         # Una página que no existe muestra la última, no un error
         self.assertEqual(self.client.get(reverse('blog:lista') + '?pagina=99').status_code, 200)
 
+    @override_settings(SITIO_URL='')
     def test_detalle_publicado(self):
         articulo = publicado()
         r = self.client.get(reverse('blog:detalle', args=[articulo.slug]))
@@ -294,6 +317,12 @@ class PaginasPublicasTests(TestCase):
         self.assertContains(r, articulo.titulo)
         self.assertContains(r, 'property="og:title"')
         self.assertContains(r, 'rel="canonical" href="http://testserver/bitacora/')
+
+    @override_settings(SITIO_URL='https://hadmind.com.co')
+    def test_vista_previa_con_el_dominio_publico(self):
+        articulo = publicado()
+        r = self.client.get(reverse('blog:detalle', args=[articulo.slug]))
+        self.assertContains(r, f'property="og:url" content="https://hadmind.com.co/bitacora/{articulo.slug}/"')
 
     def test_borrador_y_descartado_dan_404(self):
         borrador = crear_articulo(slug="borrador")

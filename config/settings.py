@@ -151,6 +151,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Vacía = la API rechaza todo: así no queda abierta por olvido.
 N8N_API_TOKEN = os.environ.get('N8N_API_TOKEN', '')
 
+# Dirección pública del sitio, sin "/" final (https://hadmind.com.co). Se usa
+# para los enlaces del correo de la Bitácora y la vista previa al compartir:
+# si n8n llama a la app por una dirección interna (127.0.0.1:8003), los enlaces
+# igual salen con el dominio público. Vacía = se usa la dirección de la petición.
+SITIO_URL = os.environ.get('SITIO_URL', '').rstrip('/')
+
 # WhiteNoise sirve los estáticos; en producción con nombres versionados (cache-busting)
 STORAGES = {
     "default": {
