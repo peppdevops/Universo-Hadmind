@@ -195,8 +195,10 @@ class EmpresaPorLlamar(Contacto):
 
     class Meta:
         proxy = True
-        verbose_name = 'empresa por llamar'
-        verbose_name_plural = 'empresas por llamar'
+        # Solo cambia el nombre visible. El nombre interno (EmpresaPorLlamar)
+        # se mantiene: renombrarlo cambiaría los permisos del grupo Vendedor.
+        verbose_name = 'empresa'
+        verbose_name_plural = 'empresas'
 
 
 class ClienteActivo(Contacto):

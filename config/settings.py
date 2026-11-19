@@ -211,7 +211,7 @@ UNFOLD = {
                 'title': 'Ventas',
                 'items': [
                     {
-                        'title': 'Empresas por llamar',
+                        'title': 'Empresas',
                         'icon': 'call',
                         'link': reverse_lazy('admin:crm_empresaporllamar_changelist'),
                         'permission': 'core.admin_permisos.ver_empresas_por_llamar',
@@ -222,12 +222,8 @@ UNFOLD = {
                         'link': reverse_lazy('admin:crm_clienteactivo_changelist'),
                         'permission': 'core.admin_permisos.ver_clientes_activos',
                     },
-                    {
-                        'title': 'Etapas',
-                        'icon': 'filter_alt',
-                        'link': reverse_lazy('admin:crm_etapa_changelist'),
-                        'permission': 'core.admin_permisos.ver_etapas',
-                    },
+                    # Etapas no va aquí: se configura pocas veces y ya está en
+                    # "Todas las aplicaciones" (solo superusuario).
                 ],
             },
             # Finanzas se añade en la fase 3, cuando existan sus modelos

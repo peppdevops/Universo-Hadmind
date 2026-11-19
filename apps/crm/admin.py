@@ -77,13 +77,24 @@ class ContactoAdminBase(ModelAdmin):
     # consulta extra por cada fila de la lista).
     list_select_related = ['etapa', 'asignado_a']
     inlines = [LlamadaInline]
-    # Seguimiento primero: es lo que el vendedor cambia después de cada llamada.
     fieldsets = [
         ('Seguimiento', {'fields': ['etapa', 'asignado_a', 'proxima_llamada', 'notas']}),
-        ('Empresa', {'fields': ['empresa', 'nombre_contacto', 'telefono', 'correo', 'ciudad', 'rubro', 'fuente']}),
+        ('Datos de la empresa', {'fields': ['empresa', 'nombre_contacto', 'telefono', 'correo', 'ciudad', 'rubro', 'fuente']}),
         ('Registro', {'fields': ['creado', 'actualizado'], 'classes': ['collapse']}),
     ]
     readonly_fields = ['creado', 'actualizado']
+
+    # El detalle se divide en tres pestañas. unfold solo ofrece pestañas de
+    # campos DENTRO de una pestaña "General" y la tabla de llamadas como otra
+    # pestaña aparte (dos niveles); esta plantilla las pone en una sola barra.
+    change_form_template = 'admin/crm/contacto_change_form.html'
+    # Qué bloques (fieldsets) van en cada pestaña. Seguimiento es la primera:
+    # es lo que el vendedor cambia después de cada llamada.
+    PESTANAS = [
+        ('seguimiento', 'Seguimiento', ['Seguimiento']),
+        ('llamadas', 'Llamadas', []),  # aquí va la tabla de llamadas (inline)
+        ('empresa', 'Empresa', ['Datos de la empresa', 'Registro']),
+    ]
 
     # --- Qué ve cada uno --------------------------------------------------
 
@@ -114,8 +125,8 @@ class ContactoAdminBase(ModelAdmin):
         qs = self.get_queryset(request)
         extra_context = {
             **(extra_context or {}),
-            # Título como en el diseño ("Empresas por llamar") en vez del de
-            # Django ("Escoja empresa por llamar a modificar").
+            # Título como en el diseño ("Empresas") en vez del de
+            # Django ("Escoja empresa a modificar").
             'title': self.opts.verbose_name_plural.capitalize(),
             'resumen_total': qs.count(),
             'resumen_hoy': contar_para_hoy(qs),
@@ -146,6 +157,26 @@ class ContactoAdminBase(ModelAdmin):
                 },
             }
         return super().change_view(request, object_id, form_url, extra_context)
+
+    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
+        # Datos de la barra de pestañas. Si al guardar hay errores, se abre la
+        # primera pestaña que los tenga: si no, el error quedaría escondido en
+        # una pestaña cerrada y parecería que "no guarda".
+        form = context['adminform'].form
+        bloques = dict(self.get_fieldsets(request, obj))
+        llamadas = sum(
+            1 for f in context.get('inline_admin_formsets', [])
+            for formulario in f.formset.forms if formulario.errors
+        ) + sum(len(f.formset.non_form_errors()) for f in context.get('inline_admin_formsets', []))
+        pestanas = []
+        for clave, titulo, nombres in self.PESTANAS:
+            campos = [c for n in nombres for c in bloques.get(n, {}).get('fields', [])]
+            errores = llamadas if clave == 'llamadas' else sum(1 for c in campos if c in form.errors)
+            cantidad = obj.interacciones.count() if clave == 'llamadas' and obj else None
+            pestanas.append({'clave': clave, 'titulo': titulo, 'bloques': nombres, 'errores': errores, 'cantidad': cantidad})
+        context['pestanas'] = pestanas
+        context['pestana_con_error'] = next((p['clave'] for p in pestanas if p['errores']), '')
+        return super().render_change_form(request, context, add, change, form_url, obj)
 
     # --- Columnas de la lista ----------------------------------------------
     # @display de unfold: header=True pinta dos líneas (título y subtítulo, y
@@ -194,7 +225,7 @@ class ContactoAdminBase(ModelAdmin):
     @display(description='')
     def col_acciones(self, obj):
         # Botones de la fila: WhatsApp (solo celulares) y registrar llamada,
-        # que abre la empresa directamente en la tabla de llamadas.
+        # que abre la empresa directamente en la pestaña Llamadas.
         cambiar = reverse(f'admin:{self.opts.app_label}_{self.opts.model_name}_change', args=[obj.pk])
         whatsapp = url_whatsapp(obj.telefono)
         boton_whatsapp = format_html(
@@ -202,7 +233,7 @@ class ContactoAdminBase(ModelAdmin):
             '<span class="material-symbols-outlined">chat</span></a>', whatsapp,
         ) if whatsapp else ''
         return format_html(
-            '<span class="hd-acciones">{}<a class="hd-boton-icono" href="{}#interacciones-group" title="Registrar llamada">'
+            '<span class="hd-acciones">{}<a class="hd-boton-icono" href="{}#llamadas" title="Registrar llamada">'
             '<span class="material-symbols-outlined">edit_note</span></a></span>',
             boton_whatsapp, cambiar,
         )

@@ -24,6 +24,21 @@ class UsuarioAdmin(BaseUserAdmin, ModelAdmin):
     add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
 
+    # Los mismos bloques que el UserAdmin de Django, pero como pestañas
+    # ('classes': ['tab'] es la forma de unfold de hacerlas). Aquí sí sirven
+    # las pestañas de unfold tal cual: usuarios no tiene tablas (inlines)
+    # que obliguen a un segundo nivel, como pasa en el detalle de empresa.
+    # Solo afecta a editar; el formulario de "nuevo usuario" no cambia.
+    fieldsets = (
+        ('Cuenta', {'fields': ('username', 'password'), 'classes': ['tab']}),
+        ('Datos personales', {'fields': ('first_name', 'last_name', 'email'), 'classes': ['tab']}),
+        ('Permisos', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+            'classes': ['tab'],
+        }),
+        ('Fechas', {'fields': ('last_login', 'date_joined'), 'classes': ['tab']}),
+    )
+
 
 @admin.register(Group)
 class GrupoAdmin(BaseGroupAdmin, ModelAdmin):

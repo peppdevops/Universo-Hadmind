@@ -20,6 +20,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.management import call_command
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.crm.models import GRUPO_VENDEDOR, Contacto, Etapa, Interaccion
 from core.utils import pesos, telefono_legible, url_whatsapp
@@ -113,3 +114,17 @@ class UtilidadesFormatoTests(TestCase):
     def test_pesos(self):
         self.assertEqual(pesos(1250000), '$1.250.000')
         self.assertEqual(pesos(0), '$0')
+
+
+class UsuarioAdminTests(TestCase):
+    """El detalle de usuario se muestra en pestañas (unfold)."""
+
+    def test_detalle_de_usuario_en_pestanas(self):
+        jefe = User.objects.create_superuser('jefe', password='x')
+        self.client.force_login(jefe)
+        r = self.client.get(reverse('admin:auth_user_change', args=[jefe.pk]))
+        self.assertEqual(r.status_code, 200)
+        for pestana in ['Cuenta', 'Datos personales', 'Permisos', 'Fechas']:
+            self.assertContains(r, f"activeFieldsetTab = '{slugify(pestana)}'")
+        # Crear usuario sigue funcionando (usa su propio formulario, sin pestañas).
+        self.assertEqual(self.client.get(reverse('admin:auth_user_add')).status_code, 200)

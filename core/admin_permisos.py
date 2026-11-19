@@ -22,7 +22,3 @@ def ver_empresas_por_llamar(request):
 
 def ver_clientes_activos(request):
     return request.user.has_perm('crm.view_clienteactivo')
-
-
-def ver_etapas(request):
-    return request.user.has_perm('crm.view_etapa')

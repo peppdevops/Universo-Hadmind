@@ -46,10 +46,10 @@ def texto_semana():
 
 
 def url_registrar_llamada(contacto):
-    # Cada empresa se abre desde la lista donde vive (por llamar o clientes),
-    # directamente en la tabla de llamadas (#interacciones-group).
+    # Cada empresa se abre desde la lista donde vive (empresas o clientes),
+    # directamente en la pestaña Llamadas (#llamadas).
     modelo = 'clienteactivo' if contacto.etapa and contacto.etapa.es_cliente else 'empresaporllamar'
-    return reverse(f'admin:crm_{modelo}_change', args=[contacto.pk]) + '#interacciones-group'
+    return reverse(f'admin:crm_{modelo}_change', args=[contacto.pk]) + '#llamadas'
 
 
 def fila_agenda(contacto):

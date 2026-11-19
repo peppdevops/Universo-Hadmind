@@ -454,3 +454,7 @@
         }
     }
 }
+
+/* Pestañas del detalle de empresa: las que no están activas se esconden
+   desde el primer momento (sin x-cloak se verían un instante al cargar). */
+[x-cloak] { display: none !important; }

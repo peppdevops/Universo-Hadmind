@@ -337,3 +337,32 @@ class ListasYDetalleTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, 'hd-resumen')
         self.assertContains(r, 'tel:+573105550142')
+
+    def test_menu_dice_empresas(self):
+        r = self.lista(self.admin)
+        self.assertEqual(r.context['title'], 'Empresas')
+        self.assertNotContains(r, 'por llamar')
+
+    def test_detalle_en_tres_pestanas(self):
+        self.client.force_login(self.admin)
+        r = self.client.get(reverse('admin:crm_empresaporllamar_change', args=[self.empresa.pk]))
+        claves = [p['clave'] for p in r.context['pestanas']]
+        self.assertEqual(claves, ['seguimiento', 'llamadas', 'empresa'])
+        self.assertEqual(r.context['pestanas'][1]['cantidad'], 1)   # una llamada registrada
+        self.assertEqual(r.context['pestana_con_error'], '')
+        # Las llamadas van dentro de su pestaña, y la fila de la lista abre esa pestaña.
+        self.assertContains(r, 'id="interacciones-group"', count=1)
+        self.assertContains(self.lista(self.admin), '#llamadas')
+
+    def test_error_abre_la_pestana_que_lo_tiene(self):
+        # Teléfono inválido: el error está en la pestaña Empresa, que debe
+        # abrirse sola; si no, quedaría escondido y parecería que no guarda.
+        self.client.force_login(self.admin)
+        url = reverse('admin:crm_empresaporllamar_change', args=[self.empresa.pk])
+        datos = {
+            'empresa': 'Auto Direct', 'telefono': '123', 'correo': '', 'etapa': self.empresa.etapa_id,
+            'interacciones-TOTAL_FORMS': '0', 'interacciones-INITIAL_FORMS': '0',
+        }
+        r = self.client.post(url, datos)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['pestana_con_error'], 'empresa')
