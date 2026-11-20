@@ -1,0 +1,51 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {# Página privada: que Google no la guarde y que el enlace firmado no se #}
+    {# filtre a otras webs (cabecera Referer) al pulsar el enlace de la fuente. #}
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    {% include "partials/_favicon.html" %}
+    <title>{% block titulo %}Revisar artículo{% endblock %} · HADMIND</title>
+    <style>
+        @font-face { font-family: 'Inter'; src: url('{% static "fonts/inter/inter-latin.woff2" %}') format('woff2'); font-weight: 100 900; font-display: swap; }
+        :root { --azul: #3E83D6; --azul-oscuro: #2463AD; --tinta: #020617; --suave: #5B6B86; --borde: #E2E8F0; --fondo: #F2F7FF;
+                --exito: #15803D; --exito-fondo: #DCFCE7; --alerta: #A16207; --alerta-fondo: #FEF9C3; --peligro: #B91C1C; --peligro-fondo: #FEE2E2; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.6 'Inter', system-ui, sans-serif; }
+        .contenedor { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+        .marca { font-weight: 700; letter-spacing: .08em; color: var(--azul); font-size: 14px; margin-bottom: 16px; }
+        .tarjeta { background: #fff; border: 1px solid var(--borde); border-radius: 16px; overflow: hidden; }
+        .tarjeta img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #E8F0FA; }
+        .sin-imagen { aspect-ratio: 16 / 10; display: grid; place-items: center; background: #E8F0FA; color: var(--suave); }
+        .cuerpo { padding: 20px; }
+        .categoria { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--azul-oscuro); text-transform: uppercase; }
+        h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; margin: 8px 0 12px; letter-spacing: -.01em; }
+        .resumen { color: var(--suave); font-size: 18px; margin: 0 0 16px; }
+        .contenido h2, .contenido h3 { line-height: 1.3; margin: 1.4em 0 .4em; }
+        .contenido a, .fuente a { color: var(--azul-oscuro); }
+        .fuente { font-size: 14px; color: var(--suave); border-top: 1px solid var(--borde); padding-top: 12px; margin-top: 20px; }
+        .estado { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; }
+        .estado--borrador { background: var(--alerta-fondo); color: var(--alerta); }
+        .estado--publicado { background: var(--exito-fondo); color: var(--exito); }
+        .estado--descartado { background: var(--peligro-fondo); color: var(--peligro); }
+        .barra { position: sticky; top: 0; z-index: 1; background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+        .botones { display: flex; flex-wrap: wrap; gap: 8px; }
+        .boton { font: inherit; font-size: 15px; font-weight: 600; border-radius: 10px; padding: 10px 16px; border: 1px solid var(--borde); background: #fff; color: var(--tinta); cursor: pointer; text-decoration: none; }
+        .boton--principal { background: var(--azul); border-color: var(--azul); color: #fff; }
+        .boton--peligro { color: var(--peligro); }
+        .mensaje { background: var(--exito-fondo); color: var(--exito); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-weight: 600; }
+        .error { color: var(--peligro); font-size: 14px; margin: 6px 0 0; }
+        .imagen-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 16px 20px; border-top: 1px solid var(--borde); font-size: 14px; }
+        .detalle { font-size: 13px; color: var(--suave); }
+    </style>
+</head>
+<body>
+    <main class="contenedor">
+        <div class="marca">HADMIND · BITÁCORA</div>
+        {% block contenido %}{% endblock %}
+    </main>
+</body>
+</html>

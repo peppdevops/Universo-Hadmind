@@ -1,0 +1,183 @@
+/* ==========================================================================
+   Aviso "Estamos en remodelación" (templates/remodelacion.html).
+   Usa los colores y la fuente de main.css.
+   ========================================================================== */
+
+.remodelacion {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 48px 16px;
+    background:
+        radial-gradient(55% 60% at 50% 38%, rgba(62, 131, 214, 0.22), rgba(62, 131, 214, 0) 70%),
+        var(--fondo);
+    text-align: center;
+}
+
+.remodelacion__contenido {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 760px;
+}
+
+.remodelacion__titulo {
+    margin: 0;
+    font-size: clamp(40px, 7.4vw, 96px);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    color: #FFFFFF;
+    text-wrap: balance;
+}
+
+/* ---------- Trazo de resaltador ---------- */
+
+.resaltado {
+    position: relative;
+    display: inline-block;
+    isolation: isolate; /* el trazo queda detrás del texto, no detrás de la página */
+    padding: 0 0.12em;
+}
+
+.resaltado__trazo {
+    position: absolute;
+    z-index: -1;
+    left: -0.06em;
+    right: -0.06em;
+    top: 0.34em;
+    bottom: 0.02em;
+    width: calc(100% + 0.12em);
+    height: calc(100% - 0.36em);
+    fill: var(--azul);
+    opacity: 0.85;
+    /* Se "pinta" de izquierda a derecha, como pasando el marcador */
+    clip-path: inset(0 100% 0 0);
+    animation: pasar-resaltador 0.9s cubic-bezier(0.55, 0.1, 0.25, 1) 0.45s forwards;
+}
+
+.resaltado__texto {
+    position: relative;
+}
+
+@keyframes pasar-resaltador {
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .resaltado__trazo {
+        animation: none;
+        clip-path: none;
+    }
+}
+
+/* ---------- Logo y contacto ---------- */
+
+.remodelacion__logo {
+    width: clamp(84px, 9vw, 112px);
+    margin-top: clamp(40px, 7vh, 64px);
+    opacity: 0.95;
+}
+
+.remodelacion__bajada {
+    max-width: 440px;
+    margin: 28px 0 0;
+    font-size: clamp(16px, 1.2vw, 18px);
+    line-height: 1.6;
+    color: var(--texto-suave);
+    text-wrap: pretty;
+}
+
+.remodelacion__whatsapp {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    margin-top: 28px;
+    padding: 0 26px;
+    border-radius: 999px;
+    background: var(--azul);
+    box-shadow: 0 12px 32px -12px rgba(62, 131, 214, 0.75);
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.remodelacion__whatsapp:hover {
+    background: var(--azul-hover);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
+
+.remodelacion__datos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 12px;
+    margin: 24px 0 0;
+    font-size: 15px;
+    color: var(--texto-tenue);
+}
+
+.remodelacion__datos a {
+    color: var(--texto);
+}
+
+.remodelacion__datos a:hover,
+.remodelacion__redes a:hover {
+    color: var(--azul-hover);
+}
+
+.remodelacion__redes {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.remodelacion__redes a {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(201, 214, 234, 0.2);
+    border-radius: 50%;
+    color: var(--texto-suave);
+}
+
+.remodelacion__sede {
+    margin: 20px 0 0;
+    font-size: 13px;
+    color: var(--texto-tenue);
+}
+
+/* En celular el número y el correo van en líneas distintas */
+@media (max-width: 479px) {
+    .remodelacion__datos {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .remodelacion__datos span {
+        display: none;
+    }
+}
+
+/* ---------- Aviso del celular en el CRM (templates/solo_computador.html) ---------- */
+
+.remodelacion__titulo--chiste {
+    font-size: clamp(36px, 9vw, 72px);
+}
+
+.remodelacion__chiste {
+    max-width: 480px;
+    margin: 28px 0 0;
+    font-size: clamp(19px, 2.4vw, 24px);
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--texto);
+    text-wrap: pretty;
+}

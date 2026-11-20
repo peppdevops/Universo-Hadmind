@@ -1,0 +1,11 @@
+{# El HTML lleva el valor final; metricas.js lo pone a cero y lo anima al aparecer #}
+<section class="metricas" aria-label="Resultados" data-metricas>
+    <div class="metricas__grid">
+        {% for metrica in metricas %}
+        <div class="metricas__item" data-metrica>
+            <div class="metricas__valor" data-metrica-valor="{{ metrica.valor }}">{{ metrica.valor }}</div>
+            <div class="metricas__texto">{{ metrica.texto }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>

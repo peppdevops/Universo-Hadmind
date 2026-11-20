@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 import os
+import sys
+
+from django.templatetags.static import static
+from django.urls import reverse_lazy
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,15 +41,26 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    # unfold debe ir ANTES de django.contrib.admin: Django usa la primera
+    # plantilla que encuentra, y así gana la de unfold sobre la del admin.
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',  # en desarrollo también sirve WhiteNoise (sin caché vieja)
     'django.contrib.staticfiles',
+    # Login con verificación en 2 pasos (código del celular) y bloqueo de intentos
+    'allauth',
+    'allauth.account',
+    'allauth.mfa',
+    'axes',
 
     'core',
     'apps.landing',
+    'apps.crm',
+    'apps.blog',
 ]
 
 MIDDLEWARE = [
@@ -55,8 +70,17 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    # Lo interno (admin, CRM, login, revisión) solo desde el computador
+    'core.middleware.SoloComputador',
+    # Después de Authentication: necesita saber si quien entra es del equipo
+    'core.middleware.ModoRemodelacion',
+    # El equipo no entra al admin sin activar la verificación en 2 pasos
+    'core.middleware.ExigirDosPasos',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Al final, como pide django-axes: convierte el bloqueo en la página de aviso
+    'axes.middleware.AxesMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -71,6 +95,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.sitio',
+                'core.context_processors.unfold_en_cuenta',
             ],
         },
     },
@@ -132,6 +158,25 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Archivos subidos (imágenes de la Bitácora). WhiteNoise NO los sirve: en
+# desarrollo los sirve Django (config/urls.py) y en el VPS, Nginx.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Clave que n8n envía para crear artículos de la Bitácora (apps/blog/api.py).
+# Vacía = la API rechaza todo: así no queda abierta por olvido.
+N8N_API_TOKEN = os.environ.get('N8N_API_TOKEN', '')
+
+# Dirección pública del sitio, sin "/" final (https://hadmind.com.co). Se usa
+# para los enlaces del correo de la Bitácora y la vista previa al compartir:
+# si n8n llama a la app por una dirección interna (127.0.0.1:8003), los enlaces
+# igual salen con el dominio público. Vacía = se usa la dirección de la petición.
+SITIO_URL = os.environ.get('SITIO_URL', '').rstrip('/')
+
+# 1 = los visitantes solo ven "Estamos en remodelación" (core/middleware.py);
+# el equipo con sesión en el admin ve el sitio completo. 0 = sitio público.
+SITIO_EN_REMODELACION = os.environ.get('SITIO_EN_REMODELACION', '0') == '1'
+
 # WhiteNoise sirve los estáticos; en producción con nombres versionados (cache-busting)
 STORAGES = {
     "default": {
@@ -147,12 +192,201 @@ STORAGES = {
 }
 
 
+# Admin con django-unfold
+# https://unfoldadmin.com/docs/configuration/settings/
+# Aquí no hay diseño propio: solo colores de marca, tipografía y el menú.
+
+UNFOLD = {
+    'SITE_TITLE': 'HADMIND',            # título de la pestaña del navegador
+    'SITE_HEADER': 'HADMIND',           # nombre arriba del menú lateral
+    'SITE_SUBHEADER': 'CRM interno',
+    'SITE_URL': '/',                    # el nombre lleva a la landing
+    # El mismo favicon del sitio (templates/partials/_favicon.html)
+    'SITE_FAVICONS': [
+        {'rel': 'icon', 'sizes': '32x32', 'type': 'image/png', 'href': lambda request: static('favicon/favicon-32.png')},
+        {'rel': 'apple-touch-icon', 'href': lambda request: static('favicon/apple-touch-icon.png')},
+    ],
+    'SHOW_VIEW_ON_SITE': False,         # los contactos no tienen página pública
+    # Datos del Inicio (dashboard). La página es templates/admin/index.html.
+    'DASHBOARD_CALLBACK': 'core.dashboard.dashboard_callback',
+    'STYLES': [
+        # lambda: static() necesita que Django esté cargado; así se llama al usarse.
+        lambda request: static('hadmind_admin/admin.css'),
+    ],
+    # Arreglo del menú lateral: que no se cierre solo al abrirlo (ver el archivo)
+    'SCRIPTS': [
+        lambda request: static('hadmind_admin/menu.js'),
+    ],
+    'COLORS': {
+        # Escala del azul HADMIND (#3E83D6 = 600, el tono de botones y enlaces).
+        # unfold necesita los 11 tonos: claros para fondos, oscuros para texto.
+        'primary': {
+            '50': '#F2F7FF',
+            '100': '#E2EEFE',
+            '200': '#C8DFFB',
+            '300': '#A1C7F7',
+            '400': '#6AA4ED',
+            '500': '#4B8EDF',
+            '600': '#3E83D6',
+            '700': '#2463AD',
+            '800': '#1B508D',
+            '900': '#174071',
+            '950': '#092649',
+        },
+    },
+    # Buscador global (arriba): busca en los search_fields de cada admin.
+    'COMMAND': {
+        'search_models': True,
+    },
+    'SIDEBAR': {
+        'show_search': False,
+        # Enlace "Todas las aplicaciones": lista todas las tablas del admin,
+        # incluidas las que se creen en el futuro. Solo para el superusuario:
+        # unfold llama a esta función con cada petición y lo muestra si da True.
+        'show_all_applications': 'core.admin_permisos.es_superusuario',
+        # "permission" decide si el enlace se muestra; un grupo sin enlaces
+        # visibles desaparece solo. Iconos: https://fonts.google.com/icons
+        'navigation': [
+            {
+                'items': [
+                    {'title': 'Inicio', 'icon': 'home', 'link': reverse_lazy('admin:index')},
+                ],
+            },
+            {
+                'title': 'Ventas',
+                'items': [
+                    {
+                        'title': 'Empresas',
+                        'icon': 'call',
+                        'link': reverse_lazy('admin:crm_empresaporllamar_changelist'),
+                        'permission': 'core.admin_permisos.ver_empresas_por_llamar',
+                    },
+                    {
+                        'title': 'Clientes activos',
+                        'icon': 'group',
+                        'link': reverse_lazy('admin:crm_clienteactivo_changelist'),
+                        'permission': 'core.admin_permisos.ver_clientes_activos',
+                    },
+                    # Etapas no va aquí: se configura pocas veces y ya está en
+                    # "Todas las aplicaciones" (solo superusuario).
+                ],
+            },
+            {
+                'title': 'Contenido',
+                'items': [
+                    {
+                        'title': 'Bitácora',
+                        'icon': 'newspaper',
+                        'link': reverse_lazy('admin:blog_articulo_changelist'),
+                        'permission': 'core.admin_permisos.es_superusuario',
+                    },
+                ],
+            },
+            # Finanzas se añade en la fase 3, cuando existan sus modelos
+            # (un enlace a una página que no existe rompería el admin).
+            {
+                'title': 'Equipo',
+                'items': [
+                    {
+                        'title': 'Usuarios',
+                        'icon': 'badge',
+                        'link': reverse_lazy('admin:auth_user_changelist'),
+                        'permission': 'core.admin_permisos.es_superusuario',
+                    },
+                ],
+            },
+        ],
+    },
+}
+
+
 # Seguridad en producción (detrás de Nginx con HTTPS)
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # El navegador recuerda por 1 año que este sitio va solo por https
+    # (empezar con 1 año es seguro porque el sitio ya tiene certificado).
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # n8n.hadmind.tech es otro dominio; no aplica
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Avisos de "manage.py check --deploy" revisados y aceptados a propósito:
+SILENCED_SYSTEM_CHECKS = [
+    # Django no envía correos: los de la Bitácora los manda n8n y no hay
+    # recuperación de contraseña por correo. Si un día se necesita, configurar SMTP.
+    'mail.E001',
+    # http → https lo hace Nginx (Certbot). Si lo hiciera Django, el chequeo de
+    # salud de Docker (http://localhost:8000/salud/ dentro del contenedor) fallaría.
+    'security.W008',
+    # HSTS en subdominios: si alguno de hadmind.com.co no tiene https, dejaría de abrir.
+    'security.W005',
+    # HSTS "preload": compromiso casi permanente con los navegadores; no hace falta.
+    'security.W021',
+]
+
+
+# ---------------------------------------------------------------------------
+# Seguridad del acceso al admin y al CRM
+# ---------------------------------------------------------------------------
+
+# Dirección del admin. En el VPS, una difícil de adivinar (los bots prueban
+# /admin/). Se normaliza a "algo/" para que la ruta siempre funcione.
+ADMIN_URL = os.environ.get('ADMIN_URL', 'admin').strip('/') + '/'
+
+# La sesión dura máximo 12 horas y se cierra al cerrar el navegador.
+SESSION_COOKIE_AGE = 60 * 60 * 12
+ACCOUNT_SESSION_REMEMBER = False
+
+# Login (django-allauth): usuario + contraseña, y después el código de 6
+# dígitos de la app del celular. No hay registro público ni recuperación por
+# correo: las cuentas las crea el superusuario en Equipo → Usuarios.
+LOGIN_URL = 'account_login'
+LOGIN_REDIRECT_URL = 'admin:index'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
+ACCOUNT_ADAPTER = 'core.cuenta.AdaptadorCuenta'
+ACCOUNT_LOGIN_METHODS = {'username'}
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_NOTIFICATIONS = False
+
+# Verificación en 2 pasos: app del celular (Google Authenticator, Microsoft
+# Authenticator...) + 10 códigos de recuperación por si se pierde el celular.
+MFA_SUPPORTED_TYPES = ['totp', 'recovery_codes']
+MFA_TOTP_ISSUER = 'HADMIND'
+
+# Bloqueo de intentos (django-axes): 5 contraseñas malas para el mismo usuario
+# desde la misma IP lo bloquean 1 hora. Por usuario + IP: un atacante en otro
+# lugar no puede dejar por fuera a alguien del equipo.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # primero: revisa el bloqueo
+    'allauth.account.auth_backends.AuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # horas
+AXES_LOCKOUT_PARAMETERS = [['username', 'ip_address']]
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_TEMPLATE = 'axes/bloqueado.html'
+# allauth trae otro bloqueo por usuario (5 fallos en 5 min, desde CUALQUIER IP):
+# con él un atacante podría dejar por fuera a alguien del equipo. Se deja solo
+# su límite por IP (10 intentos por minuto) y el bloqueo lo hace axes.
+ACCOUNT_RATE_LIMITS = {'login_failed': '10/m/ip'}
+# En el VPS la app está detrás de Nginx: la IP real llega en X-Forwarded-For.
+AXES_IPWARE_PROXY_COUNT = 1
+AXES_IPWARE_META_PRECEDENCE_ORDER = ['HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR']
+
+# Nadie del equipo entra al admin sin activar la verificación en 2 pasos
+# (core.middleware.ExigirDosPasos).
+EXIGIR_DOS_PASOS = True
+
+# Los tests no dependen del .env de quien los corre: el aviso de remodelación
+# y la obligación de los 2 pasos arrancan apagados, y los tests de esas reglas
+# los encienden con override_settings.
+if 'test' in sys.argv:
+    SITIO_EN_REMODELACION = False
+    EXIGIR_DOS_PASOS = False
 
 
 # Email

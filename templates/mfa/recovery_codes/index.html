@@ -1,0 +1,29 @@
+{% extends "mfa/recovery_codes/base.html" %}
+{% load allauth %}
+{% comment %}
+Se muestra justo después de activar la verificación en 2 pasos. Igual que el
+de allauth, más el botón para seguir al CRM.
+{% endcomment %}
+{% block head_title %}Códigos de recuperación{% endblock head_title %}
+{% block content %}
+    {% element h1 %}Códigos de recuperación{% endelement %}
+    {% element p %}Si pierdes el celular, cada código sirve <strong>una sola vez</strong> en lugar del código de la app. Guárdalos en un lugar seguro (anotados en papel o descargados), fuera del celular.{% endelement %}
+    {% element p %}Te quedan {{ unused_codes|length }} de {{ total_count }} códigos.{% endelement %}
+    {% if can_view_codes %}
+        {% element field id="recovery_codes" type="textarea" rows=unused_codes|length readonly=True %}
+            {% slot label %}Códigos sin usar{% endslot %}
+            {# djlint:off #}
+{% slot value %}{% for code in unused_codes %}{% if forloop.counter0 %}
+{% endif %}{{ code }}{% endfor %}{% endslot %}
+            {# djlint:on #}
+        {% endelement %}
+    {% endif %}
+    {% element button_group %}
+        {% if can_download_codes %}
+            {% url 'mfa_download_recovery_codes' as download_url %}
+            {% element button href=download_url tags="secondary" %}Descargar los códigos{% endelement %}
+        {% endif %}
+        {% url 'admin:index' as crm_url %}
+        {% element button href=crm_url %}Ya los guardé, ir al CRM{% endelement %}
+    {% endelement %}
+{% endblock content %}

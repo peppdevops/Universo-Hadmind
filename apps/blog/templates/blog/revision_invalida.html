@@ -1,0 +1,16 @@
+{% extends "blog/_revision_base.html" %}
+
+{% block titulo %}Enlace no válido{% endblock %}
+
+{% block contenido %}
+    <div class="tarjeta"><div class="cuerpo">
+        {% if vencido %}
+            <h1>Este enlace ya venció</h1>
+            <p>Los enlaces de revisión duran 7 días. Puedes revisar y publicar el artículo desde el admin, en Contenido → Bitácora.</p>
+        {% else %}
+            <h1>Enlace no válido</h1>
+            <p>El enlace está incompleto o fue modificado. Ábrelo de nuevo desde el correo, o revisa el artículo en el admin, en Contenido → Bitácora.</p>
+        {% endif %}
+        <p><a class="boton boton--principal" href="{% url 'admin:blog_articulo_changelist' %}">Ir al admin</a></p>
+    </div></div>
+{% endblock %}

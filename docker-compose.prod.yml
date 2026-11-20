@@ -23,11 +23,15 @@ services:
     ports:
       - "127.0.0.1:${WEB_PORT:-8003}:8000"   # solo Nginx (en el mismo VPS) puede llegar aquí
     env_file: .env
+    volumes:
+      # Imágenes de la Bitácora en una carpeta del VPS (/opt/hadmind-web/media):
+      # sobreviven al reconstruir el contenedor y Nginx las sirve directo.
+      - ./media:/app/media
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/salud/', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,0 +1,17 @@
+{% load static %}
+{# El escenario queda fijo (sticky) mientras se recorre la pista; hero.js anima texto y robot #}
+<div class="hero" id="inicio" data-hero>
+    <div class="hero__escenario" data-hero-escenario>
+        <div class="hero__brillo" aria-hidden="true" data-hero-brillo></div>
+        <img class="hero__robot" src="{% static 'landing/img/robot-hero.webp' %}" alt="Robot HADMIND sosteniendo una tarjeta metálica con el logo HADMIND" width="1672" height="941" fetchpriority="high" data-hero-robot>
+        <div class="hero__texto" data-hero-texto>
+            <div class="hero__etiqueta">SOFTWARE · IA · AUTOMATIZACIÓN</div>
+            <h1 class="hero__titulo">Tecnología que trabaja<br>por tu empresa.</h1>
+            <p class="hero__bajada">Diseñamos software, automatizaciones e inteligencia artificial para convertir procesos manuales en sistemas que trabajan por ti.</p>
+            <div class="hero__botones" data-hero-botones>
+                <a class="boton boton--oscuro" href="#nosotros">CONOCE HADMIND</a>
+                <a class="boton boton--azul" href="#contacto">HABLEMOS DE TU PROYECTO</a>
+            </div>
+        </div>
+    </div>
+</div>

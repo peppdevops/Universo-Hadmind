@@ -1,0 +1,13 @@
+{# Bloque: saludo, fecha y botones principales (solo superusuario). #}
+<div class="hd-encabezado">
+    <div>
+        <p class="hd-suave">{{ fecha_hoy }}</p>
+        <h1 class="hd-titulo">{{ saludo }}</h1>
+    </div>
+    {% if es_superusuario %}
+        <div class="hd-botones">
+            {% include "unfold/components/button.html" with href=url_importar variant="default" icon="upload" children="Importar CSV" %}
+            {% include "unfold/components/button.html" with href=url_nueva_empresa icon="add" children="Nueva empresa" %}
+        </div>
+    {% endif %}
+</div>

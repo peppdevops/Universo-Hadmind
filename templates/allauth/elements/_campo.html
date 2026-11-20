@@ -1,0 +1,16 @@
+{% load estilo_unfold %}
+{# Un campo de formulario con la misma estructura que unfold/helpers/field.html #}
+{% if campo.is_hidden %}
+    {{ campo }}
+{% elif campo.field.widget.input_type == "checkbox" %}
+    <div class="{% if campo.errors %}errors {% endif %}flex flex-col group mb-4">
+        <div class="flex flex-row gap-2 items-center">{{ campo|campo_unfold }}{% include "unfold/helpers/form_label.html" with field=campo %}</div>
+        {% include "unfold/helpers/form_errors.html" with errors=campo.errors %}
+    </div>
+{% else %}
+    <div class="{% if campo.errors %}errors {% endif %}flex flex-col group mb-4">
+        <div class="flex flex-col gap-2">{% include "unfold/helpers/form_label.html" with field=campo %}{{ campo|campo_unfold }}</div>
+        {% include "unfold/helpers/form_errors.html" with errors=campo.errors %}
+        {% include "unfold/helpers/help_text.html" with help_text=campo.help_text %}
+    </div>
+{% endif %}

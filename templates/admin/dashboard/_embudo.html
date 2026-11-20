@@ -1,0 +1,16 @@
+{% load unfold %}
+{# Bloque: embudo por etapas (solo superusuario). Datos: core/dashboard.py -> datos_embudo #}
+{% component "unfold/components/card.html" with title="Embudo por etapas" action=embudo.total_texto %}
+    <div class="hd-embudo">
+        {% for fila in embudo.filas %}
+            <div class="hd-etapa">
+                {% include "unfold/helpers/label.html" with type=fila.color text=fila.etapa.nombre %}
+                <p class="hd-numero">{{ fila.total }}</p>
+                {% component "unfold/components/progress.html" with value=fila.ancho %}{% endcomponent %}
+                <p class="hd-nota">{{ fila.nota }}</p>
+            </div>
+        {% empty %}
+            <p class="hd-vacio">No hay etapas configuradas.</p>
+        {% endfor %}
+    </div>
+{% endcomponent %}

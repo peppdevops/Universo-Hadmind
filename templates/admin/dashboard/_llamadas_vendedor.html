@@ -1,0 +1,25 @@
+{% load unfold %}
+{% comment %}
+Bloque: llamadas de esta semana. Superusuario: una fila por vendedor.
+Vendedor: solo su fila ("Mis llamadas"). Datos: core/dashboard.py -> datos_llamadas
+{% endcomment %}
+{% component "unfold/components/card.html" with title=es_superusuario|yesno:"Llamadas por vendedor,Mis llamadas" description="Esta semana · "|add:llamadas.semana %}
+    <ul class="hd-vendedores">
+        {% for v in llamadas.filas %}
+            <li>
+                <div class="hd-vendedores__cabecera">
+                    <span class="hd-iniciales">{{ v.iniciales }}</span>
+                    <span class="hd-vendedores__nombre">{{ v.nombre }}</span>
+                    <strong>{{ v.total }} llamada{{ v.total|pluralize }}</strong>
+                </div>
+                {% component "unfold/components/progress.html" with value=v.porcentaje %}{% endcomponent %}
+                <p class="hd-nota">
+                    {{ v.contestaron }} contestaron · {{ v.porcentaje }} %
+                    · {{ v.interesados }} interesado{{ v.interesados|pluralize }}
+                </p>
+            </li>
+        {% empty %}
+            <li class="hd-vacio">Todavía no hay llamadas esta semana.</li>
+        {% endfor %}
+    </ul>
+{% endcomponent %}
