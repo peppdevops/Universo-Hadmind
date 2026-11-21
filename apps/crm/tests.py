@@ -18,7 +18,9 @@ from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
-from core.utils import TelefonoInvalido, normalizar_correo, normalizar_telefono
+from core.utils import (
+    InstagramInvalido, TelefonoInvalido, normalizar_correo, normalizar_instagram, normalizar_telefono,
+)
 
 from .admin import LlamadaInline
 from .models import GRUPO_VENDEDOR, ClienteActivo, Contacto, EmpresaPorLlamar, Etapa, Interaccion
@@ -50,6 +52,23 @@ class NormalizacionTests(TestCase):
         self.assertEqual(normalizar_telefono(''), '')
         self.assertEqual(normalizar_correo('  Ana@Empresa.CO '), 'ana@empresa.co')
 
+    def test_instagram_como_lo_pegue_el_vendedor_queda_igual(self):
+        for entrada in [
+            '@Ferreteria.Tornillo', 'ferreteria.tornillo', ' @ferreteria.tornillo ',
+            'https://www.instagram.com/ferreteria.tornillo/',
+            'instagram.com/Ferreteria.Tornillo',
+            'https://instagram.com/ferreteria.tornillo?igsh=MWQ1ZGUxMzBkMA==',
+        ]:
+            with self.subTest(entrada=entrada):
+                self.assertEqual(normalizar_instagram(entrada), 'ferreteria.tornillo')
+        self.assertEqual(normalizar_instagram(''), '')
+
+    def test_instagram_invalido(self):
+        # Espacios, signos raros, más de 30 letras, o el enlace a una publicación (no a un perfil).
+        for entrada in ['ferreteria el tornillo', 'tienda#1', 'a' * 31, 'https://www.instagram.com/p/C1abc/']:
+            with self.subTest(entrada=entrada), self.assertRaises(InstagramInvalido):
+                normalizar_instagram(entrada)
+
 
 class ContactoModeloTests(TestCase):
     def test_al_guardar_normaliza_y_toma_la_primera_etapa_abierta(self):
@@ -78,6 +97,17 @@ class ContactoModeloTests(TestCase):
     def test_exige_telefono_o_correo(self):
         with self.assertRaises(ValidationError):
             Contacto(empresa='Sin datos').full_clean()
+
+    def test_instagram_se_guarda_como_usuario_y_arma_el_enlace(self):
+        c = Contacto.objects.create(empresa='Acme', telefono='3001234567', instagram='https://instagram.com/Acme.Co/')
+        self.assertEqual(c.instagram, 'acme.co')
+        self.assertEqual(c.url_instagram, 'https://www.instagram.com/acme.co/')
+
+    def test_instagram_invalido_marca_el_campo(self):
+        c = Contacto(empresa='Acme', telefono='3001234567', instagram='no es un usuario')
+        with self.assertRaises(ValidationError) as error:
+            c.full_clean()
+        self.assertIn('instagram', error.exception.message_dict)
 
 
 class ImportacionTests(TestCase):
@@ -117,6 +147,20 @@ class ImportacionTests(TestCase):
         self.assertEqual(resultado.importadas, [2])
         c = Contacto.objects.get(telefono='+573005555555')
         self.assertEqual((c.empresa, c.ciudad), ('Ñandú SAS', 'Medellín'))
+
+    def test_columna_instagram_opcional(self):
+        # La de la plantilla de Excel; la fila con Instagram malo se salta y se informa.
+        texto = (
+            'Empresa;Telefono;Instagram\n'
+            'Alfa;3001111111;@Alfa.Shop\n'      # 2: ok
+            'Beta;3002222222;\n'                # 3: ok, sin Instagram
+            'Gamma;3003333333;no sirve esto\n'  # 4: error
+        )
+        resultado = importar_contactos_csv(csv_subido(texto))
+        self.assertEqual(resultado.importadas, [2, 3])
+        self.assertEqual([fila for fila, _ in resultado.errores], [4])
+        self.assertEqual(Contacto.objects.get(empresa='Alfa').instagram, 'alfa.shop')
+        self.assertEqual(Contacto.objects.get(empresa='Beta').instagram, '')
 
     def test_asigna_todas_al_vendedor(self):
         vendedor = User.objects.create_user('vendedor', is_staff=True)
@@ -338,6 +382,16 @@ class ListasYDetalleTests(TestCase):
         self.assertContains(r, 'hd-resumen')
         self.assertContains(r, 'tel:+573105550142')
         self.assertNotContains(r, 'wa.me')
+        # Sin Instagram guardado, no hay botón.
+        self.assertNotContains(r, 'instagram.com')
+
+    def test_boton_instagram_abre_el_perfil_en_pestana_nueva(self):
+        Contacto.objects.filter(pk=self.empresa.pk).update(instagram='autodirect.co')
+        self.client.force_login(self.ana)
+        r = self.client.get(reverse('admin:crm_empresaporllamar_change', args=[self.empresa.pk]))
+        self.assertContains(r, 'href="https://www.instagram.com/autodirect.co/"')
+        self.assertContains(r, 'target="_blank"')
+        self.assertContains(r, 'rel="noopener noreferrer"')
 
     def test_menu_dice_empresas(self):
         r = self.lista(self.admin)

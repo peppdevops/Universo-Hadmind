@@ -6,7 +6,9 @@ from django.db.models import Max, OuterRef, Q, Subquery
 from django.db.models.functions import Lower
 from django.utils import timezone
 
-from core.utils import TelefonoInvalido, normalizar_correo, normalizar_telefono
+from core.utils import (
+    InstagramInvalido, TelefonoInvalido, normalizar_correo, normalizar_instagram, normalizar_telefono, url_instagram,
+)
 
 # Nombre del grupo de Django para los vendedores. Lo usan el admin, el
 # formulario de importación y el comando crear_grupo_vendedor.
@@ -104,6 +106,14 @@ class Contacto(models.Model):
     correo = models.EmailField('correo', blank=True)
     ciudad = models.CharField('ciudad', max_length=100, blank=True)
     rubro = models.CharField('rubro', max_length=100, blank=True)
+    # Se guarda solo el usuario, sin @ (máximo 30 caracteres, ver
+    # normalizar_instagram); el enlace se arma al mostrarlo. max_length es
+    # mayor porque el formulario mide lo que se PEGA antes de limpiarlo, y un
+    # enlace copiado de la app ("...?igsh=...") pasa fácil de 30.
+    instagram = models.CharField(
+        'Instagram', max_length=200, blank=True,
+        help_text='El usuario (@empresa) o el enlace del perfil; se guarda solo el usuario.',
+    )
     fuente = models.CharField('fuente', max_length=20, choices=Fuente.choices, default=Fuente.MANUAL)
     # PROTECT: no se puede borrar una etapa mientras haya contactos en ella.
     # null=True: si no hay etapa, save() asigna la primera abierta.
@@ -152,9 +162,14 @@ class Contacto(models.Model):
     def __str__(self):
         return self.empresa
 
+    @property
+    def url_instagram(self):
+        return url_instagram(self.instagram)
+
     def normalizar(self):
         self.telefono = normalizar_telefono(self.telefono)
         self.correo = normalizar_correo(self.correo)
+        self.instagram = normalizar_instagram(self.instagram)
 
     def clean(self):
         # El admin llama a clean() ANTES de comprobar las restricciones de
@@ -163,6 +178,8 @@ class Contacto(models.Model):
             self.normalizar()
         except TelefonoInvalido as error:
             raise ValidationError({'telefono': str(error)})
+        except InstagramInvalido as error:
+            raise ValidationError({'instagram': str(error)})
         if not self.telefono and not self.correo:
             raise ValidationError('Indica al menos un teléfono o un correo.')
 

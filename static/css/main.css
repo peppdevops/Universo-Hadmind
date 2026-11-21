@@ -537,3 +537,34 @@ a:focus-visible {
     text-align: center;
     pointer-events: none; /* no tapa clics de lo que haya debajo */
 }
+
+/* Botón del equipo para volver al CRM (base.html, solo con sesión de staff).
+   Abajo a la izquierda para no chocar con la franja del modo remodelación,
+   que va centrada. Misma forma de píldora y sombra que esa franja. */
+.volver-crm {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--azul);
+    color: #FFFFFF;
+    box-shadow: 0 10px 30px -10px rgba(2, 6, 23, 0.6);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.volver-crm:hover,
+.volver-crm:focus-visible {
+    background: var(--azul-hover);
+}
+
+/* En pantallas angostas la franja centrada pasaría por encima del botón: sube. */
+@media (max-width: 720px) {
+    .aviso-equipo {
+        bottom: 64px;
+    }
+}
