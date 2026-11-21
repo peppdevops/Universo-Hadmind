@@ -17,7 +17,7 @@ class ImportarCSVForm(forms.Form):
     archivo = forms.FileField(
         label='Archivo CSV',
         widget=UnfoldAdminFileFieldWidget,
-        help_text='Columnas: empresa, contacto, telefono, correo, ciudad, rubro. '
+        help_text='Columnas: empresa, contacto, telefono, correo, instagram, ciudad, rubro. '
                   'Desde Excel: Guardar como → "CSV UTF-8" o "CSV (delimitado por comas)".',
     )
     asignar_a = VendedorChoiceField(
