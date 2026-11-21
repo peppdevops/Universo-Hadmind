@@ -79,7 +79,7 @@ class ContactoAdminBase(ModelAdmin):
     inlines = [LlamadaInline]
     fieldsets = [
         ('Seguimiento', {'fields': ['etapa', 'asignado_a', 'proxima_llamada', 'notas']}),
-        ('Datos de la empresa', {'fields': ['empresa', 'nombre_contacto', 'telefono', 'correo', 'ciudad', 'rubro', 'fuente']}),
+        ('Datos de la empresa', {'fields': ['empresa', 'nombre_contacto', 'telefono', 'correo', 'instagram', 'ciudad', 'rubro', 'fuente']}),
         ('Registro', {'fields': ['creado', 'actualizado'], 'classes': ['collapse']}),
     ]
     readonly_fields = ['creado', 'actualizado']
@@ -151,6 +151,11 @@ class ContactoAdminBase(ModelAdmin):
                     'proxima_texto': texto,
                     'telefono': telefono_legible(obj.telefono),
                     'tel': obj.telefono,
+                    'instagram': obj.instagram,
+                    'url_instagram': obj.url_instagram,
+                    # Pestaña nueva: el CRM queda abierto detrás. noopener:
+                    # la página de Instagram no puede controlar esta pestaña.
+                    'attrs_externo': {'target': '_blank', 'rel': 'noopener noreferrer'},
                 },
             }
         return super().change_view(request, object_id, form_url, extra_context)

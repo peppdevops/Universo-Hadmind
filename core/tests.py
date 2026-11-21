@@ -162,6 +162,27 @@ class ModoRemodelacionTests(TestCase):
         self.assertNotContains(r, 'solo el equipo ve el sitio')
 
 
+# Con el sitio ya público (sin aviso), que es cuando cualquiera puede ver el HTML.
+@override_settings(SITIO_EN_REMODELACION=False)
+class VolverAlCrmTests(TestCase):
+    def test_el_equipo_ve_el_boton_con_la_direccion_del_admin(self):
+        self.client.force_login(User.objects.create_user('ana', password='x', is_staff=True))
+        r = self.client.get('/')
+        self.assertContains(r, 'Volver al CRM')
+        self.assertContains(r, f'href="{reverse("admin:index")}"')
+
+    def test_visitante_y_usuario_sin_ser_del_equipo_no_lo_reciben(self):
+        # Ni el botón ni la dirección del admin aparecen en la página.
+        for usuario in (None, User.objects.create_user('cliente', password='x')):
+            with self.subTest(usuario=usuario):
+                if usuario:
+                    self.client.force_login(usuario)
+                r = self.client.get('/')
+                self.assertEqual(r.status_code, 200)
+                self.assertNotContains(r, 'Volver al CRM')
+                self.assertNotContains(r, reverse('admin:index'))
+
+
 # --- Seguridad: admin secreto, bloqueo de intentos, 2 pasos, solo computador --
 
 from allauth.mfa.totp.internal.auth import (  # noqa: E402

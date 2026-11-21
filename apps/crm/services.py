@@ -16,12 +16,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from core.utils import (
-    TelefonoInvalido, normalizar_correo, normalizar_encabezado, normalizar_telefono,
+    InstagramInvalido, TelefonoInvalido, normalizar_correo, normalizar_encabezado, normalizar_instagram,
+    normalizar_telefono,
 )
 
 from .models import Contacto, Etapa, Interaccion
 
-COLUMNAS = ('empresa', 'contacto', 'telefono', 'correo', 'ciudad', 'rubro')
+COLUMNAS = ('empresa', 'contacto', 'telefono', 'correo', 'instagram', 'ciudad', 'rubro')
 
 # Otros nombres habituales en hojas de cálculo que aceptamos como equivalentes.
 ALIAS = {
@@ -32,6 +33,7 @@ ALIAS = {
     'email': 'correo',
     'e_mail': 'correo',
     'correo_electronico': 'correo',
+    'ig': 'instagram',
 }
 
 
@@ -123,6 +125,11 @@ def importar_contactos_csv(archivo, asignar_a=None):
             resultado.errores.append((numero, f'teléfono no válido ({datos["telefono"]})'))
             continue
         correo = normalizar_correo(datos['correo'])
+        try:
+            instagram = normalizar_instagram(datos['instagram'])
+        except InstagramInvalido:
+            resultado.errores.append((numero, f'Instagram no válido ({datos["instagram"]})'))
+            continue
 
         if telefono and telefono in telefonos:
             resultado.duplicadas.append((numero, f'el teléfono {telefono} ya existe'))
@@ -136,6 +143,7 @@ def importar_contactos_csv(archivo, asignar_a=None):
             nombre_contacto=datos['contacto'],
             telefono=telefono,
             correo=correo,
+            instagram=instagram,
             ciudad=datos['ciudad'],
             rubro=datos['rubro'],
             fuente=Contacto.Fuente.IMPORTACION,

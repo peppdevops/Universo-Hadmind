@@ -28,6 +28,10 @@ Al crear una empresa nueva no hay resumen y no se muestra nada.
                 {% include "unfold/components/button.html" with href=enlace_tel variant="default" icon="call" children=resumen.telefono %}
             {% endwith %}
         {% endif %}
+        {% if resumen.url_instagram %}
+            {# Material Symbols no trae logos de marcas: ícono genérico de enlace externo #}
+            {% include "unfold/components/button.html" with href=resumen.url_instagram variant="default" icon="open_in_new" children="Instagram" title="@"|add:resumen.instagram attrs=resumen.attrs_externo %}
+        {% endif %}
     </div>
 </div>
 {% endif %}
