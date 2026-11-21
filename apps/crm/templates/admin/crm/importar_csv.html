@@ -3,6 +3,10 @@
 Página de importar CSV con las piezas de unfold: su plantilla de campo
 (unfold/helpers/field.html) y su botón (unfold/components/button.html).
 El título lo pone unfold arriba a partir de la variable "title" de la vista.
+
+El formulario se llama "formulario" (no "form") y los botones reciben title=""
+porque unfold/components/button.html lee "form" y "title" del contexto: sin
+eso, el botón heredaba el formulario entero y el título de la página.
 {% endcomment %}
 
 {% block content %}
@@ -15,18 +19,18 @@ El título lo pone unfold arriba a partir de la variable "title" de la vista.
 
     <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {% if form.non_field_errors %}
-            {% include "unfold/helpers/form_errors.html" with errors=form.non_field_errors %}
+        {% if formulario.non_field_errors %}
+            {% include "unfold/helpers/form_errors.html" with errors=formulario.non_field_errors %}
         {% endif %}
 
-        {% for campo in form %}
+        {% for campo in formulario %}
             {% include "unfold/helpers/field.html" with field=campo %}
         {% endfor %}
 
         <div class="flex gap-3">
-            {% include "unfold/components/button.html" with submit=1 icon="upload" children="Importar" %}
+            {% include "unfold/components/button.html" with submit=1 icon="upload" children="Importar" title="" form="" %}
             {% url 'admin:crm_empresaporllamar_changelist' as volver %}
-            {% include "unfold/components/button.html" with href=volver variant="default" children="Cancelar" %}
+            {% include "unfold/components/button.html" with href=volver variant="default" children="Cancelar" title="" form="" %}
         </div>
     </form>
 </div>

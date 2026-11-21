@@ -284,6 +284,23 @@ class CrmAdminTests(TestCase):
         self.assertContains(respuesta, '1 duplicadas')
         self.assertEqual(Contacto.objects.get(empresa='Nueva').asignado_a, self.vendedor)
 
+    def test_pagina_de_importar_se_dibuja_bien(self):
+        # Pasó en producción: el botón de unfold tomaba el formulario del
+        # contexto ("form") y lo metía dentro de sí mismo; la página mostraba
+        # los campos repetidos, código suelto y ningún botón para enviar.
+        self.client.force_login(self.admin)
+        r = self.client.get(self.url('importar'))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'type="file"', count=1)        # un solo campo de archivo
+        self.assertContains(r, 'name="asignar_a"', count=1)    # un solo selector
+        # El botón Importar existe y es un botón de enviar de verdad (la página
+        # tiene otros submit, como "Terminar sesión": se busca este en concreto).
+        html = r.content.decode()
+        self.assertRegex(html, r'<button[^>]*type="submit"[^>]*>\s*<span[^>]*>upload</span>\s*Importar')
+        self.assertNotContains(r, 'form="')                    # sin formulario metido en un botón
+        self.assertNotContains(r, '&quot; title=')             # sin código suelto en la página
+        self.assertContains(r, 'instagram')                    # ayuda con la columna nueva
+
     def test_busqueda_por_telefono_sin_formato(self):
         self.client.force_login(self.admin)
         respuesta = self.client.get(self.url('changelist'), {'q': '300 111 1111'})

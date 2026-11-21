@@ -373,7 +373,10 @@ class EmpresaPorLlamarAdmin(ContactoAdminBase):
             # (menú, nombre del sitio, usuario...).
             **self.admin_site.each_context(request),
             'opts': self.opts,
-            'form': form,
+            # "formulario" y no "form": el botón de unfold (components/button.html)
+            # tiene una opción llamada "form" y la toma del contexto; con "form"
+            # metía el formulario entero dentro del botón y la página se rompía.
+            'formulario': form,
             'title': 'Importar empresas desde CSV',
         }
         return TemplateResponse(request, 'admin/crm/importar_csv.html', contexto)
